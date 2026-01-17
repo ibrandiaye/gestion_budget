@@ -56,4 +56,21 @@ class ExecutionController extends Controller
 
         return back()->with('success', 'Dépense engagée avec succès.');
     }
+
+    public function history()
+    {
+        $query = Execution::with(['ligneBudget.compte', 'ligneBudget.service', 'ligneBudget.budget'])
+            ->orderByDesc('date')
+            ->orderByDesc('created_at');
+
+        if (Auth::user()->role !== 'admin') {
+            $query->whereHas('ligneBudget', function ($q) {
+                $q->where('service_id', Auth::user()->service_id);
+            });
+        }
+
+        $executions = $query->paginate(20);
+
+        return view('execution.history', compact('executions'));
+    }
 }

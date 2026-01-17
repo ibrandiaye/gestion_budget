@@ -36,6 +36,7 @@ class BesoinController extends Controller
 
         $comptes = Compte::where('type', 'Fonctionnement')
             ->whereNotNull('parent_id') // Only leaf accounts usually
+            ->where('etat', 'actif')
             ->get();
 
         return view('besoins.create', compact('comptes'));

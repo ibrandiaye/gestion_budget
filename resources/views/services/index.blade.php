@@ -34,13 +34,18 @@
                                 {{ $service->departement ?? '-' }}
                             </td>
                             <td style="padding: 0.75rem;">
-                                <form action="{{ route('services.destroy', $service) }}" method="POST"
+                            <td style="padding: 0.75rem;">
+                                <button onclick="openServiceModal({{ $service }})"
+                                    style="color: var(--primary); background: none; border: none; cursor: pointer; margin-right: 0.5rem;">✏️</button>
+
+                                <form action="{{ route('services.destroy', $service) }}" method="POST" style="display: inline;"
                                     onsubmit="return confirm('Supprimer ce service ?')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
                                         style="color: var(--danger); background: none; border: none; cursor: pointer;">🗑️</button>
                                 </form>
+                            </td>
                             </td>
                         </tr>
                     @empty
@@ -87,4 +92,70 @@
             </form>
         </div>
     </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="serviceModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%; max-width: 500px; margin: 2rem;">
+            <h3 style="margin-bottom: 1.5rem;">Modifier Service</h3>
+            <form id="editServiceForm" method="POST">
+                @csrf
+                @method('PUT')
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Nom du Service</label>
+                    <input type="text" id="edit_nom" name="nom" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Code (Identifiant)</label>
+                    <input type="text" id="edit_code" name="code" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Chef de Service</label>
+                    <input type="text" id="edit_chef_service" name="chef_service"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Département</label>
+                    <input type="text" id="edit_departement" name="departement"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" onclick="closeServiceModal()" class="btn-secondary"
+                        style="flex: 1; text-align: center;">Annuler</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openServiceModal(service) {
+            const modal = document.getElementById('serviceModal');
+            const form = document.getElementById('editServiceForm');
+
+            document.getElementById('edit_nom').value = service.nom;
+            document.getElementById('edit_code').value = service.code;
+            document.getElementById('edit_chef_service').value = service.chef_service || '';
+            document.getElementById('edit_departement').value = service.departement || '';
+
+            form.action = `/services/${service.id}`;
+            modal.style.display = 'flex';
+        }
+
+        function closeServiceModal() {
+            document.getElementById('serviceModal').style.display = 'none';
+        }
+
+        document.getElementById('serviceModal').addEventListener('click', function (e) {
+            if (e.target === this) closeServiceModal();
+        });
+    </script>
 @endsection

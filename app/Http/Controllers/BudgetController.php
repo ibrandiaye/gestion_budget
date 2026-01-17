@@ -13,8 +13,12 @@ use Illuminate\Support\Facades\DB;
 class BudgetController extends Controller
 {
     // Admin View: Arbitrage
+    // Admin View: Arbitrage
     public function arbitrage()
     {
+        if (Auth::user()->role !== 'admin') {
+            return redirect()->route('dashboard')->withErrors(['msg' => 'Accès réservé aux administrateurs.']);
+        }
 
         // Get Needs grouped by Service to make it easier to review
         $besoins = Besoin::with(['service', 'compte'])
@@ -28,6 +32,10 @@ class BudgetController extends Controller
     // Process Arbitrage (Accept/Reject/Modify)
     public function valider(Request $request)
     {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Accès réservé aux administrateurs.');
+        }
+
         $request->validate([
             'besoins' => 'required|array',
             'besoins.*.id' => 'required|exists:besoins,id',

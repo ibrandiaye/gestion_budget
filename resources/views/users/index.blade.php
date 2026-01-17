@@ -33,8 +33,12 @@
                                 {{ $user->service->nom ?? '-' }}
                             </td>
                             <td style="padding: 0.75rem;">
+                                <button onclick="openUserModal({{ $user }})" 
+                                    style="color: var(--primary); background: none; border: none; cursor: pointer; margin-right: 0.5rem;">✏️</button>
+                                
                                 @if($user->id !== Auth::id())
                                     <form action="{{ route('users.destroy', $user) }}" method="POST"
+                                        style="display: inline;"
                                         onsubmit="return confirm('Confirmer la suppression ?')">
                                         @csrf
                                         @method('DELETE')
@@ -98,4 +102,87 @@
             </form>
         </div>
     </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="userModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%; max-width: 500px; margin: 2rem;">
+            <h3 style="margin-bottom: 1.5rem;">Modifier Utilisateur</h3>
+            <form id="editUserForm" method="POST">
+                @csrf
+                @method('PUT') 
+                <!-- Note: Users Controller needs update method, using POST for now if PUT not defined, 
+                     but standard resource uses PUT/PATCH. Laravel accepts PUT via method spoofing. -->
+                
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Nom Complet</label>
+                    <input type="text" id="edit_name" name="name" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Email</label>
+                    <input type="email" id="edit_email" name="email" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Rôle</label>
+                    <select id="edit_role" name="role" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                        <option value="service">Chef de Service</option>
+                        <option value="controleur">Contrôleur</option>
+                        <option value="admin">Administrateur</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Service</label>
+                    <select id="edit_service_id" name="service_id"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                        <option value="">Aucun</option>
+                        @foreach($services as $service)
+                            <option value="{{ $service->id }}">{{ $service->nom }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" onclick="closeUserModal()" class="btn-secondary" style="flex: 1; text-align: center;">Annuler</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openUserModal(user) {
+            const modal = document.getElementById('userModal');
+            const form = document.getElementById('editUserForm');
+            
+            // Populate fields
+            document.getElementById('edit_name').value = user.name;
+            document.getElementById('edit_email').value = user.email;
+            document.getElementById('edit_role').value = user.role;
+            document.getElementById('edit_service_id').value = user.service_id || '';
+
+            // Set Form Action (We need to add a route for update if it doesn't exist, 
+            // assuming standard resource route: /users/{id})
+            form.action = `/users/${user.id}`;
+            
+            // Laravel resource controller usually expects PUT/PATCH
+            // The @method('PUT') inside form handles this.
+
+            modal.style.display = 'flex';
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+
+        // Close on click outside
+        document.getElementById('userModal').addEventListener('click', function(e) {
+            if(e.target === this) closeUserModal();
+        });
+    </script>
 @endsection

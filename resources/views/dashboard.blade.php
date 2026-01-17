@@ -80,6 +80,232 @@
         </div>
     </div>
 
+    @if(Auth::user()->role === 'service')
+    <!-- SERVICE MANAGER DASHBOARD -->
+    
+    <!-- Besoins Statistics -->
+    @if(isset($data['besoins_stats']))
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; font-weight: 600;">Mes Besoins Exprimés</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div style="text-align: center; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">{{ $data['besoins_stats']['total'] }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Total Besoins</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--slate-900);">{{ number_format($data['besoins_stats']['total_demande'], 0, ',', ' ') }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">FCFA Demandé</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: var(--warning-light); border-radius: 0.5rem;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">{{ $data['besoins_stats']['cree'] }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">En attente</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: var(--success-light); border-radius: 0.5rem;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">{{ $data['besoins_stats']['valide'] }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Validés</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: var(--danger-light); border-radius: 0.5rem;">
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">{{ $data['besoins_stats']['rejete'] }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Rejetés</div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Budget Lines by Account -->
+    @if(isset($data['lignes_budget']))
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; font-weight: 600;">Mon Budget par Compte</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.85rem; color: var(--text-muted);">
+                    <th style="padding: 0.75rem;">Compte</th>
+                    <th style="padding: 0.75rem; text-align: right;">Alloué</th>
+                    <th style="padding: 0.75rem; text-align: right;">Engagé</th>
+                    <th style="padding: 0.75rem; text-align: right;">Disponible</th>
+                    <th style="padding: 0.75rem; text-align: right;">%</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($data['lignes_budget'] as $ligne)
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem;">
+                        <div style="font-weight: 500;">{{ $ligne->compte->libelle }}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $ligne->compte->numero }}</div>
+                    </td>
+                    <td style="padding: 0.75rem; text-align: right; font-family: monospace;">
+                        {{ number_format($ligne->montant_alloue, 0, ',', ' ') }}
+                    </td>
+                    <td style="padding: 0.75rem; text-align: right; font-family: monospace; font-weight: 600;">
+                        {{ number_format($ligne->montant_engage, 0, ',', ' ') }}
+                    </td>
+                    <td style="padding: 0.75rem; text-align: right; font-family: monospace; color: var(--success);">
+                        {{ number_format($ligne->solde_disponible, 0, ',', ' ') }}
+                    </td>
+                    <td style="padding: 0.75rem; text-align: right;">
+                        @php
+                            $percent = $ligne->montant_alloue > 0 ? ($ligne->montant_engage / $ligne->montant_alloue) * 100 : 0;
+                        @endphp
+                        <span style="padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; 
+                            background: {{ $percent > 80 ? 'var(--danger-light)' : 'var(--success-light)' }};
+                            color: {{ $percent > 80 ? 'var(--danger)' : 'var(--success)' }};">
+                            {{ round($percent, 1) }}%
+                        </span>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="5" style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                        Aucune ligne budgétaire allouée.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @endif
+
+    <!-- Recent Executions -->
+    @if(isset($data['recent_executions']) && $data['recent_executions']->count() > 0)
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; font-weight: 600;">Dépenses Récentes</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.85rem; color: var(--text-muted);">
+                    <th style="padding: 0.75rem;">Date</th>
+                    <th style="padding: 0.75rem;">Compte</th>
+                    <th style="padding: 0.75rem;">Description</th>
+                    <th style="padding: 0.75rem; text-align: right;">Montant</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($data['recent_executions'] as $exec)
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.9rem;">
+                        {{ \Carbon\Carbon::parse($exec->date)->format('d/m/Y') }}
+                    </td>
+                    <td style="padding: 0.75rem;">
+                        <div style="font-weight: 500; font-size: 0.9rem;">{{ $exec->ligneBudget->compte->libelle }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ $exec->ligneBudget->compte->numero }}</div>
+                    </td>
+                    <td style="padding: 0.75rem; color: var(--slate-600); font-size: 0.9rem;">
+                        {{ Str::limit($exec->description, 50) }}
+                    </td>
+                    <td style="padding: 0.75rem; text-align: right; font-family: monospace; font-weight: 600;">
+                        {{ number_format($exec->montant, 0, ',', ' ') }} FCFA
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+
+    @else
+    <!-- ADMIN DASHBOARD -->
+
+    <!-- Charts Section -->
+    @if(isset($data['chart_services']))
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="stat-card">
+            <h3 class="stat-title">Budget vs Engagement par Service</h3>
+            <canvas id="chartServices" height="250"></canvas>
+        </div>
+        <div class="stat-card">
+            <h3 class="stat-title">Par Compte (Top 8)</h3>
+            <canvas id="chartComptes" height="250"></canvas>
+        </div>
+    </div>
+    <div class="stat-card" style="margin-bottom: 2rem;">
+        <h3 class="stat-title">Evolution des Dépenses (Mensuel)</h3>
+        <canvas id="chartEvolution" height="100"></canvas>
+    </div>
+    @endif
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Common Options
+            const commonOptions = {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                    x: { grid: { display: false } }
+                }
+            };
+
+            // Chart 1: Services
+            const ctx1 = document.getElementById('chartServices').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: @json($data['chart_services']['labels'] ?? []),
+                    datasets: [
+                        {
+                            label: 'Alloué',
+                            data: @json($data['chart_services']['alloue'] ?? []),
+                            backgroundColor: '#e2e8f0',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Engagé',
+                            data: @json($data['chart_services']['engage'] ?? []),
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: commonOptions
+            });
+
+            // Chart 2: Comptes
+            const ctx2 = document.getElementById('chartComptes').getContext('2d');
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: @json($data['chart_comptes']['labels'] ?? []),
+                    datasets: [{
+                        data: @json($data['chart_comptes']['values'] ?? []),
+                        backgroundColor: [
+                            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+                            '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12 } }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            // Chart 3: Evolution
+            const ctx3 = document.getElementById('chartEvolution').getContext('2d');
+            new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: @json($data['chart_evolution']['labels'] ?? []),
+                    datasets: [{
+                        label: 'Dépenses',
+                        data: @json($data['chart_evolution']['values'] ?? []),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: commonOptions
+            });
+        });
+    </script>
+    @endpush
+
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
         <!-- Top Services -->
         <div class="card">
@@ -152,4 +378,5 @@
             </div>
         </div>
     </div>
+    @endif
 @endsection

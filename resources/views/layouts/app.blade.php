@@ -10,8 +10,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @stack('scripts')
 </head>
 
 <body class="antialiased">
@@ -36,14 +39,23 @@
                 <a href="{{ route('besoins.index') }}" class="nav-item {{ request()->routeIs('besoins.*') ? 'active' : '' }}">
                     <span class="icon">📝</span> Besoins
                 </a>
+              
+                @if(Auth::check() && Auth::user()->role === 'admin')
                 <a href="{{ route('budget.arbitrage') }}" class="nav-item {{ request()->routeIs('budget.arbitrage') ? 'active' : '' }}">
                     <span class="icon">⚖️</span> Arbitrage
+                </a>
+                 <a href="{{ route('reporting.accounts') }}" class="nav-item {{ request()->routeIs('reporting.accounts') ? 'active' : '' }}">
+                    <span class="icon">📊</span> Par Compte
+                </a>
+               
+                <a href="{{ route('ajustements.create') }}" class="nav-item {{ request()->routeIs('ajustements.*') ? 'active' : '' }}">
+                    <span class="icon">↔️</span> Virements
                 </a>
                 <a href="{{ route('execution.index') }}" class="nav-item {{ request()->routeIs('execution.*') ? 'active' : '' }}">
                     <span class="icon">💸</span> Exécution
                 </a>
 
-                @if(Auth::check() && Auth::user()->role === 'admin')
+                
                 <div class="nav-section">Administration</div>
                 <a href="{{ route('users.index') }}" class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                     <span class="icon">👥</span> Utilisateurs
@@ -51,19 +63,14 @@
                 <a href="{{ route('services.index') }}" class="nav-item {{ request()->routeIs('services.*') ? 'active' : '' }}">
                     <span class="icon">🏢</span> Services
                 </a>
-                <a href="{{ route('comptes.index') }}" class="nav-item {{ request()->routeIs('comptes.*') ? 'active' : '' }}">
+                  <a href="{{ route('comptes.index') }}" class="nav-item {{ request()->routeIs('comptes.*') ? 'active' : '' }}">
                     <span class="icon">📑</span> Comptes
                 </a>
-                <a href="{{ route('budgets.index') }}" class="nav-item {{ request()->routeIs('budgets.*') ? 'active' : '' }}">
+                 <a href="{{ route('budgets.index') }}" class="nav-item {{ request()->routeIs('budgets.*') ? 'active' : '' }}">
                     <span class="icon">📅</span> Exercices
                 </a>
-                <a href="{{ route('ajustements.create') }}" class="nav-item {{ request()->routeIs('ajustements.*') ? 'active' : '' }}">
-                    <span class="icon">↔️</span> Virements
-                </a>
                 @endif
-                <a href="{{ route('reporting.accounts') }}" class="nav-item {{ request()->routeIs('reporting.accounts') ? 'active' : '' }}">
-                    <span class="icon">📊</span> Par Compte
-                </a>
+               
             </nav>
 
             <div class="user-profile">
@@ -76,7 +83,7 @@
                 </div>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
-                    <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--danger);" title="Déconnexion">⏻</button>
+                    <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--danger);" title="Déconnexion"><i class="fa fa-sign-out"></i></button>
                 </form>
             </div>
         </aside>
@@ -86,8 +93,12 @@
             <header class="top-bar">
                 <h2 class="page-title">@yield('title', 'Tableau de bord')</h2>
                 <div class="actions">
-                    <button class="btn-icon">🔔</button>
-                    <button class="btn-icon">⚙️</button>
+                   <!--  <button class="btn-icon">🔔</button>
+                    <button class="btn-icon">⚙️</button> -->
+                     <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--danger);" title="Déconnexion"><i class="fa fa-sign-out"></i> Déconnexion</button>
+                </form>
                 </div>
             </header>
 

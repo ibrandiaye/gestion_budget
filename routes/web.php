@@ -64,6 +64,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/budget/arbitrage', [BudgetController::class, 'valider'])->name('budget.valider');
 
     // Execution
+    Route::get('/execution/historique', [ExecutionController::class, 'history'])->name('execution.history');
     Route::get('/execution', [ExecutionController::class, 'index'])->name('execution.index');
     Route::post('/execution', [ExecutionController::class, 'store'])->name('execution.store');
 
@@ -71,4 +72,9 @@ Route::middleware('auth')->group(function () {
     // Reporting
     Route::get('/reporting', [ReportingController::class, 'global'])->name('reporting.global');
     Route::get('/reporting/compte', [ReportingController::class, 'parCompte'])->name('reporting.accounts');
+    // Exports
+    Route::get('/export/besoins/service', [ReportingController::class, 'exportBesoinsByService'])->name('export.besoins.service');
+    Route::get('/export/besoins/compte', [ReportingController::class, 'exportBesoinsByCompte'])->name('export.besoins.compte');
+    Route::get('/export/budget/service', [ReportingController::class, 'exportBudgetByService'])->name('export.budget.service');
+    Route::get('/export/budget/compte', [ReportingController::class, 'exportBudgetByCompte'])->name('export.budget.compte');
 });

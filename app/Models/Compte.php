@@ -9,7 +9,7 @@ class Compte extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['numero', 'libelle', 'type', 'parent_id'];
+    protected $fillable = ['numero', 'libelle', 'type', 'parent_id', 'etat'];
 
     public function parent()
     {

@@ -3,8 +3,11 @@
 @section('title', 'Exécution Budgétaire')
 
 @section('content')
-    <div class="actions-header" style="margin-bottom: 2rem;">
-        <p style="color: var(--text-muted);">Suivi des crédits, engagements et mandatements.</p>
+    <div class="actions-header"
+        style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+        <p style="color: var(--text-muted); margin: 0;">Suivi des crédits, engagements et mandatements.</p>
+        <a href="{{ route('execution.history') }}" class="btn-secondary" style="text-decoration: none;">📜 Historique des
+            dépenses</a>
     </div>
 
     <!-- Grid of Budget Lines -->

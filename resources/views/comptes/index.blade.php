@@ -17,6 +17,14 @@
                                 <span style="font-weight: 600;">{{ $compte->libelle }}</span>
                                 <span
                                     style="font-size: 0.75rem; background: var(--slate-100); padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.5rem;">{{ $compte->type }}</span>
+                                <span
+                                    style="font-size: 0.75rem; margin-left: 0.5rem; color: {{ $compte->etat === 'actif' ? 'var(--success)' : 'var(--danger)' }};">
+                                    {{ ucfirst($compte->etat) }}
+                                </span>
+                            </div>
+                            <div>
+                                <button onclick="openCompteModal({{ $compte }})"
+                                    style="border: none; background: none; color: var(--primary); cursor: pointer; font-size: 0.9rem; margin-right: 0.5rem;">✏️</button>
                             </div>
                         </div>
 
@@ -31,12 +39,16 @@
                                                 style="font-weight: 600; color: var(--slate-600); margin-right: 0.5rem;">{{ $child->numero }}</span>
                                             <span>{{ $child->libelle }}</span>
                                         </div>
-                                        <form action="{{ route('comptes.destroy', $child) }}" method="POST" style="display: inline;"
-                                            onsubmit="return confirm('Confirmer suppression ?')">
-                                            @csrf @method('DELETE')
-                                            <button
-                                                style="border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem;">🗑️</button>
-                                        </form>
+                                        <div>
+                                            <button onclick="openCompteModal({{ $child }})"
+                                                style="border: none; background: none; color: var(--primary); cursor: pointer; font-size: 0.8rem; margin-right: 0.5rem;">✏️</button>
+                                            <form action="{{ route('comptes.destroy', $child) }}" method="POST" style="display: inline;"
+                                                onsubmit="return confirm('Confirmer suppression ?')">
+                                                @csrf @method('DELETE')
+                                                <button
+                                                    style="border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem;">🗑️</button>
+                                            </form>
+                                        </div>
                                     </li>
                                 @endforeach
                             </ul>
@@ -73,6 +85,15 @@
                     </select>
                 </div>
 
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Etat</label>
+                    <select name="etat" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                        <option value="actif">Actif</option>
+                        <option value="inactif">Inactif</option>
+                    </select>
+                </div>
+
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Compte Parent</label>
                     <select name="parent_id"
@@ -88,4 +109,88 @@
             </form>
         </div>
     </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="compteModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%; max-width: 500px; margin: 2rem;">
+            <h3 style="margin-bottom: 1.5rem;">Modifier Compte</h3>
+            <form id="editCompteForm" method="POST">
+                @csrf
+                @method('PUT')
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Numéro de Compte</label>
+                    <input type="text" id="edit_numero" name="numero" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Libellé</label>
+                    <input type="text" id="edit_libelle" name="libelle" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Type</label>
+                    <select id="edit_type" name="type" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                        <option value="Fonctionnement">Fonctionnement</option>
+                        <option value="Investissement">Investissement</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Etat</label>
+                    <select id="edit_etat" name="etat" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                        <option value="actif">Actif</option>
+                        <option value="inactif">Inactif</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Compte Parent</label>
+                    <select id="edit_parent_id" name="parent_id"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                        <option value="">Aucun (Racine)</option>
+                        @foreach($allComptes as $c)
+                            <option value="{{ $c->id }}">{{ $c->numero }} - {{ $c->libelle }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" onclick="closeCompteModal()" class="btn-secondary"
+                        style="flex: 1; text-align: center;">Annuler</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openCompteModal(compte) {
+            const modal = document.getElementById('compteModal');
+            const form = document.getElementById('editCompteForm');
+
+            document.getElementById('edit_numero').value = compte.numero;
+            document.getElementById('edit_libelle').value = compte.libelle;
+            document.getElementById('edit_type').value = compte.type;
+            document.getElementById('edit_etat').value = compte.etat || 'actif'; // set default
+            document.getElementById('edit_parent_id').value = compte.parent_id || '';
+
+            form.action = `/comptes/${compte.id}`;
+            modal.style.display = 'flex';
+        }
+
+        function closeCompteModal() {
+            document.getElementById('compteModal').style.display = 'none';
+        }
+
+        document.getElementById('compteModal').addEventListener('click', function (e) {
+            if (e.target === this) closeCompteModal();
+        });
+    </script>
 @endsection

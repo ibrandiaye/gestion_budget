@@ -19,6 +19,9 @@
                 <tr>
                     <th
                         style="text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
+                        Budget</th>
+                    <th
+                        style="text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
                         Compte</th>
                     <th
                         style="text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
@@ -52,10 +55,10 @@
                         </td>
                         <td style="padding: 1rem; text-align: center;">
                             <span style="
-                                        display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
-                                        background: {{ $besoin->statut === 'valide' ? 'var(--primary-100)' : ($besoin->statut === 'cree' ? 'var(--slate-100)' : '#fee2e2') }};
-                                        color: {{ $besoin->statut === 'valide' ? 'var(--primary-700)' : ($besoin->statut === 'cree' ? 'var(--slate-600)' : '#b91c1c') }};
-                                    ">
+                                                display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+                                                background: {{ $besoin->statut === 'valide' ? 'var(--primary-100)' : ($besoin->statut === 'cree' ? 'var(--slate-100)' : '#fee2e2') }};
+                                                color: {{ $besoin->statut === 'valide' ? 'var(--primary-700)' : ($besoin->statut === 'cree' ? 'var(--slate-600)' : '#b91c1c') }};
+                                            ">
                                 {{ ucfirst($besoin->statut) }}
                             </span>
                         </td>

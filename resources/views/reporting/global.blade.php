@@ -31,41 +31,94 @@
         </div>
     </div>
 
+    <!-- Exports Section -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1rem;">Exports CSV</h3>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{{ route('export.besoins.service') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
+                📥 Besoins par Service
+            </a>
+            <a href="{{ route('export.besoins.compte') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
+                📥 Besoins par Compte
+            </a>
+            <a href="{{ route('export.budget.service') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
+                📥 Budget par Service
+            </a>
+            <a href="{{ route('export.budget.compte') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
+                📥 Budget par Compte
+            </a>
+        </div>
+    </div>
+
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
-        <!-- Stats per Service -->
+        <!-- Stats per Service (Admin) or per Account (Service Manager) -->
         <div class="card">
-            <h3 style="margin-bottom: 1.5rem;">Détail par Service</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr
-                        style="text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem;">
-                        <th style="padding: 0.75rem;">Service</th>
-                        <th style="padding: 0.75rem; text-align: right;">Budget Alloué</th>
-                        <th style="padding: 0.75rem; text-align: right;">Engagé</th>
-                        <th style="padding: 0.75rem; text-align: right;">%</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($statsServices as $stat)
-                        <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 0.75rem; font-weight: 500;">
-                                {{ $stat->service->nom }}
-                            </td>
-                            <td style="padding: 0.75rem; text-align: right;">
-                                {{ number_format($stat->total_alloue, 0, ',', ' ') }}
-                            </td>
-                            <td style="padding: 0.75rem; text-align: right;">
-                                {{ number_format($stat->total_engage, 0, ',', ' ') }}
-                            </td>
-                            <td style="padding: 0.75rem; text-align: right;">
-                                <span style="font-weight: 600; color: {{ $stat->taux > 90 ? 'var(--danger)' : 'inherit' }}">
-                                    {{ number_format($stat->taux, 1) }}%
-                                </span>
-                            </td>
+            @if(Auth::user()->role === 'service')
+                <h3 style="margin-bottom: 1.5rem;">Détail par Compte</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem;">
+                            <th style="padding: 0.75rem;">Compte</th>
+                            <th style="padding: 0.75rem; text-align: right;">Budget Alloué</th>
+                            <th style="padding: 0.75rem; text-align: right;">Engagé</th>
+                            <th style="padding: 0.75rem; text-align: right;">%</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach($statsComptes as $stat)
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.75rem;">
+                                    <div style="font-weight: 500;">{{ $stat->compte->libelle }}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $stat->compte->numero }}</div>
+                                </td>
+                                <td style="padding: 0.75rem; text-align: right;">
+                                    {{ number_format($stat->total_alloue, 0, ',', ' ') }}
+                                </td>
+                                <td style="padding: 0.75rem; text-align: right;">
+                                    {{ number_format($stat->total_engage, 0, ',', ' ') }}
+                                </td>
+                                <td style="padding: 0.75rem; text-align: right;">
+                                    <span style="font-weight: 600; color: {{ $stat->taux > 90 ? 'var(--danger)' : 'inherit' }}">
+                                        {{ number_format($stat->taux, 1) }}%
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @else
+                <h3 style="margin-bottom: 1.5rem;">Détail par Service</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.85rem;">
+                            <th style="padding: 0.75rem;">Service</th>
+                            <th style="padding: 0.75rem; text-align: right;">Budget Alloué</th>
+                            <th style="padding: 0.75rem; text-align: right;">Engagé</th>
+                            <th style="padding: 0.75rem; text-align: right;">%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($statsServices as $stat)
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.75rem; font-weight: 500;">
+                                    {{ $stat->service->nom }}
+                                </td>
+                                <td style="padding: 0.75rem; text-align: right;">
+                                    {{ number_format($stat->total_alloue, 0, ',', ' ') }}
+                                </td>
+                                <td style="padding: 0.75rem; text-align: right;">
+                                    {{ number_format($stat->total_engage, 0, ',', ' ') }}
+                                </td>
+                                <td style="padding: 0.75rem; text-align: right;">
+                                    <span style="font-weight: 600; color: {{ $stat->taux > 90 ? 'var(--danger)' : 'inherit' }}">
+                                        {{ number_format($stat->taux, 1) }}%
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
         </div>
 
         <!-- Top Engagements -->
@@ -75,9 +128,11 @@
                 <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--slate-100);">
                     <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.25rem;">{{ $ligne->compte->libelle }}
                     </div>
+                    @if(Auth::user()->role !== 'service')
                     <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
                         {{ $ligne->service->nom }}
                     </div>
+                    @endif
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div
                             style="height: 4px; flex: 1; background: var(--slate-100); border-radius: 2px; margin-right: 1rem;">

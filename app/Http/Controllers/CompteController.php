@@ -24,6 +24,7 @@ class CompteController extends Controller
             'libelle' => 'required|string|max:255',
             'type' => 'required|in:Fonctionnement,Investissement',
             'parent_id' => 'nullable|exists:comptes,id',
+            'etat' => 'required|in:actif,inactif',
         ]);
 
         Compte::create($request->all());
@@ -38,6 +39,7 @@ class CompteController extends Controller
             'libelle' => 'required|string|max:255',
             'type' => 'required|in:Fonctionnement,Investissement',
             'parent_id' => 'nullable|exists:comptes,id',
+            'etat' => 'required|in:actif,inactif',
         ]);
 
         $compte->update($request->all());
