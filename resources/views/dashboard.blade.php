@@ -3,54 +3,8 @@
 @section('title', 'Tableau de bord')
 
 @section('content')
+    @if(Auth::user()->role === 'admin')
     <div class="grid-stats">
-        <style>
-            .grid-stats {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 1.5rem;
-                margin-bottom: 2rem;
-            }
-
-            .stat-card {
-                background: white;
-                padding: 1.5rem;
-                border-radius: 1rem;
-                border: 1px solid var(--border-color);
-                box-shadow: var(--shadow-sm);
-            }
-
-            .stat-title {
-                color: var(--text-muted);
-                font-size: 0.85rem;
-                font-weight: 600;
-                text-transform: uppercase;
-                margin-bottom: 0.5rem;
-            }
-
-            .stat-value {
-                font-size: 2rem;
-                font-weight: 700;
-                color: var(--slate-900);
-            }
-
-            .stat-trend {
-                font-size: 0.85rem;
-                margin-top: 0.5rem;
-                display: flex;
-                align-items: center;
-                gap: 0.25rem;
-            }
-
-            .trend-up {
-                color: var(--success);
-            }
-
-            .trend-down {
-                color: var(--danger);
-            }
-        </style>
-
         <div class="stat-card">
             <h3 class="stat-title">Budget Total ({{ $data['annee'] }})</h3>
             <div class="stat-value" style="color: var(--primary);">{{ number_format($data['total_alloue'], 0, ',', ' ') }}
@@ -79,6 +33,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     @if(Auth::user()->role === 'service')
     <!-- SERVICE MANAGER DASHBOARD -->
@@ -93,8 +48,8 @@
                 <div style="font-size: 0.85rem; color: var(--text-muted);">Total Besoins</div>
             </div>
             <div style="text-align: center; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--slate-900);">{{ number_format($data['besoins_stats']['total_demande'], 0, ',', ' ') }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">FCFA Demandé</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--slate-900);">{{ $data['besoins_stats']['total_quantite'] }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">Quantité Totale</div>
             </div>
             <div style="text-align: center; padding: 1rem; background: var(--warning-light); border-radius: 0.5rem;">
                 <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">{{ $data['besoins_stats']['cree'] }}</div>
@@ -112,94 +67,21 @@
     </div>
     @endif
 
-    <!-- Budget Lines by Account -->
-    @if(isset($data['lignes_budget']))
-    <div class="card" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; font-weight: 600;">Mon Budget par Compte</h3>
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.85rem; color: var(--text-muted);">
-                    <th style="padding: 0.75rem;">Compte</th>
-                    <th style="padding: 0.75rem; text-align: right;">Alloué</th>
-                    <th style="padding: 0.75rem; text-align: right;">Engagé</th>
-                    <th style="padding: 0.75rem; text-align: right;">Disponible</th>
-                    <th style="padding: 0.75rem; text-align: right;">%</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($data['lignes_budget'] as $ligne)
-                <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 0.75rem;">
-                        <div style="font-weight: 500;">{{ $ligne->compte->libelle }}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $ligne->compte->numero }}</div>
-                    </td>
-                    <td style="padding: 0.75rem; text-align: right; font-family: monospace;">
-                        {{ number_format($ligne->montant_alloue, 0, ',', ' ') }}
-                    </td>
-                    <td style="padding: 0.75rem; text-align: right; font-family: monospace; font-weight: 600;">
-                        {{ number_format($ligne->montant_engage, 0, ',', ' ') }}
-                    </td>
-                    <td style="padding: 0.75rem; text-align: right; font-family: monospace; color: var(--success);">
-                        {{ number_format($ligne->solde_disponible, 0, ',', ' ') }}
-                    </td>
-                    <td style="padding: 0.75rem; text-align: right;">
-                        @php
-                            $percent = $ligne->montant_alloue > 0 ? ($ligne->montant_engage / $ligne->montant_alloue) * 100 : 0;
-                        @endphp
-                        <span style="padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; 
-                            background: {{ $percent > 80 ? 'var(--danger-light)' : 'var(--success-light)' }};
-                            color: {{ $percent > 80 ? 'var(--danger)' : 'var(--success)' }};">
-                            {{ round($percent, 1) }}%
-                        </span>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="5" style="padding: 2rem; text-align: center; color: var(--text-muted);">
-                        Aucune ligne budgétaire allouée.
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
+    <!-- Budget info for service heads simplified to hide amounts -->
+    <div class="card" style="margin-bottom: 2rem; padding: 2.5rem; text-align: center;">
+        <h3 style="margin-bottom: 1rem; color: var(--slate-800);">Gestion des Activités Budgétaires</h3>
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem auto;">
+            En tant que Chef de Service, vous pouvez exprimer vos besoins en spécifiant les articles et quantités nécessaires. L'administration se chargera de l'arbitrage financier.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 1rem;">
+            <a href="{{ route('besoins.create') }}" class="btn-primary" style="text-decoration: none; padding: 0.75rem 2rem;">
+                Exprimer un nouveau besoin
+            </a>
+            <a href="{{ route('besoins.index') }}" class="btn-secondary" style="text-decoration: none; padding: 0.75rem 2rem;">
+                Suivi de mes demandes
+            </a>
+        </div>
     </div>
-    @endif
-
-    <!-- Recent Executions -->
-    @if(isset($data['recent_executions']) && $data['recent_executions']->count() > 0)
-    <div class="card" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; font-weight: 600;">Dépenses Récentes</h3>
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.85rem; color: var(--text-muted);">
-                    <th style="padding: 0.75rem;">Date</th>
-                    <th style="padding: 0.75rem;">Compte</th>
-                    <th style="padding: 0.75rem;">Description</th>
-                    <th style="padding: 0.75rem; text-align: right;">Montant</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($data['recent_executions'] as $exec)
-                <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td style="padding: 0.75rem; font-family: monospace; font-size: 0.9rem;">
-                        {{ \Carbon\Carbon::parse($exec->date)->format('d/m/Y') }}
-                    </td>
-                    <td style="padding: 0.75rem;">
-                        <div style="font-weight: 500; font-size: 0.9rem;">{{ $exec->ligneBudget->compte->libelle }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ $exec->ligneBudget->compte->numero }}</div>
-                    </td>
-                    <td style="padding: 0.75rem; color: var(--slate-600); font-size: 0.9rem;">
-                        {{ Str::limit($exec->description, 50) }}
-                    </td>
-                    <td style="padding: 0.75rem; text-align: right; font-family: monospace; font-weight: 600;">
-                        {{ number_format($exec->montant, 0, ',', ' ') }} FCFA
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endif
 
     @else
     <!-- ADMIN DASHBOARD -->

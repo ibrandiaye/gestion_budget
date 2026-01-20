@@ -25,13 +25,18 @@
                         Compte</th>
                     <th
                         style="text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
-                        Justification</th>
+                        Besoin (Détails)</th>
                     <th
-                        style="text-align: right; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
-                        Montant Demandé</th>
+                        style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
+                        Quantité</th>
                     <th
                         style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
                         Statut</th>
+                    @if(Auth::user()->role === 'admin')
+                    <th
+                        style="text-align: right; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
+                        Montant Accordé</th>
+                    @endif
                     <th
                         style="text-align: right; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase;">
                         Actions</th>
@@ -47,27 +52,33 @@
                             <div style="font-weight: 500;">{{ $besoin->compte->libelle }}</div>
                             <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $besoin->compte->numero }}</div>
                         </td>
-                        <td style="padding: 1rem; max-width: 300px;">
-                            {{ Str::limit($besoin->justification, 50) }}
+                        <td style="padding: 1rem;">
+                            <div style="font-weight: 600;">{{ $besoin->libelle }}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">{{ Str::limit($besoin->justification, 100) }}</div>
                         </td>
-                        <td style="padding: 1rem; text-align: right; font-weight: 600;">
-                            {{ number_format($besoin->montant_demande, 0, ',', ' ') }} FCFA
+                        <td style="padding: 1rem; text-align: center; font-weight: 600;">
+                            {{ $besoin->quantite }}
                         </td>
                         <td style="padding: 1rem; text-align: center;">
                             <span style="
-                                                display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
-                                                background: {{ $besoin->statut === 'valide' ? 'var(--primary-100)' : ($besoin->statut === 'cree' ? 'var(--slate-100)' : '#fee2e2') }};
-                                                color: {{ $besoin->statut === 'valide' ? 'var(--primary-700)' : ($besoin->statut === 'cree' ? 'var(--slate-600)' : '#b91c1c') }};
-                                            ">
-                                {{ ucfirst($besoin->statut) }}
-                            </span>
-                        </td>
-                        <td style="padding: 1rem; text-align: right;">
-                            <button style="border: none; background: transparent; cursor: pointer;">✏️</button>
-                            <button
-                                style="border: none; background: transparent; cursor: pointer; color: var(--danger);">🗑️</button>
-                        </td>
-                    </tr>
+                                                 display: inline-block; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+                                                 background: {{ $besoin->statut === 'valide' ? 'var(--primary-100)' : ($besoin->statut === 'cree' ? 'var(--slate-100)' : '#fee2e2') }};
+                                                 color: {{ $besoin->statut === 'valide' ? 'var(--primary-700)' : ($besoin->statut === 'cree' ? 'var(--slate-600)' : '#b91c1c') }};
+                                             ">
+                                 {{ ucfirst($besoin->statut) }}
+                             </span>
+                         </td>
+                         @if(Auth::user()->role === 'admin')
+                         <td style="padding: 1rem; text-align: right; font-weight: 700; color: var(--primary-700);">
+                             {{ number_format($besoin->montant_accorde ?? 0, 0, ',', ' ') }} FCFA
+                         </td>
+                         @endif
+                         <td style="padding: 1rem; text-align: right;">
+                             <button style="border: none; background: transparent; cursor: pointer;">✏️</button>
+                             <button
+                                 style="border: none; background: transparent; cursor: pointer; color: var(--danger);">🗑️</button>
+                         </td>
+                     </tr>
                 @empty
                     <tr>
                         <td colspan="5" style="padding: 3rem; text-align: center; color: var(--text-muted);">

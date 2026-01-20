@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Besoin;
 use App\Models\Budget;
+use App\Models\Compte;
 use App\Models\LigneBudget;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -14,19 +15,54 @@ class BudgetController extends Controller
 {
     // Admin View: Arbitrage
     // Admin View: Arbitrage
-    public function arbitrage()
+    public function arbitrage(Request $request)
     {
         if (Auth::user()->role !== 'admin') {
             return redirect()->route('dashboard')->withErrors(['msg' => 'Accès réservé aux administrateurs.']);
         }
 
-        // Get Needs grouped by Service to make it easier to review
-        $besoins = Besoin::with(['service', 'compte'])
-            ->where('statut', 'cree') // Only show new needs
-            ->orderBy('service_id')
-            ->get();
+        $compteId = $request->query('compte_id');
 
-        return view('budget.arbitrage', compact('besoins'));
+        if ($compteId) {
+            // View specific account needs
+            $compte = Compte::findOrFail($compteId);
+            $besoins = Besoin::with(['service'])
+                ->where('compte_id', $compteId)
+                ->whereIn('statut', ['cree', 'valide', 'rejete'])
+                ->where('budget_id', Budget::where('statut', 'actif')->first()?->id)
+                ->get();
+
+            if ($besoins->isEmpty()) {
+                return redirect()->route('budget.arbitrage')->with('info', "Aucun besoin trouvé pour ce compte sur l'exercice en cours.");
+            }
+
+            // Calculate total estimated needs based on account reference price
+            $totalEstimation = $besoins->sum('quantite') * ($compte->prix_unitaire_ref ?? 0);
+
+            return view('budget.arbitrage_detail', compact('compte', 'besoins', 'totalEstimation'));
+        }
+
+        // View list of accounts with needs for the active budget
+    $budgetActif = Budget::where('statut', 'actif')->first();
+    $comptes = Compte::whereHas('besoins', function($query) use ($budgetActif) {
+        $query->whereIn('statut', ['cree', 'valide', 'rejete']);
+        if ($budgetActif) $query->where('budget_id', $budgetActif->id);
+    })
+    ->withCount(['besoins' => function($query) use ($budgetActif) {
+        $query->whereIn('statut', ['cree', 'valide', 'rejete']);
+        if ($budgetActif) $query->where('budget_id', $budgetActif->id);
+    }])
+    ->withCount(['besoins as besoins_en_attente_count' => function($query) use ($budgetActif) {
+        $query->where('statut', 'cree');
+        if ($budgetActif) $query->where('budget_id', $budgetActif->id);
+    }])
+    ->withSum(['besoins as total_quantite' => function($query) use ($budgetActif) {
+        $query->whereIn('statut', ['cree', 'valide', 'rejete']);
+        if ($budgetActif) $query->where('budget_id', $budgetActif->id);
+    }], 'quantite')
+    ->get();
+
+    return view('budget.arbitrage', compact('comptes'));
     }
 
     // Process Arbitrage (Accept/Reject/Modify)
@@ -39,7 +75,8 @@ class BudgetController extends Controller
         $request->validate([
             'besoins' => 'required|array',
             'besoins.*.id' => 'required|exists:besoins,id',
-            'besoins.*.montant_accorde' => 'nullable|numeric|min:0',
+            'besoins.*.quantite' => 'nullable|integer|min:0',
+            'besoins.*.prix_unitaire' => 'nullable|numeric|min:0',
             'besoins.*.action' => 'required|in:valider,rejetter',
         ]);
 
@@ -48,8 +85,6 @@ class BudgetController extends Controller
             $budget = Budget::where('statut', 'actif')->first();
 
             if (!$budget) {
-                // Return error if no active budget (should be managed via Annual Budgets)
-                // Or create a default one for safety if this is the first run
                 $budget = Budget::create([
                     'annee' => date('Y'),
                     'statut' => 'actif',
@@ -60,45 +95,50 @@ class BudgetController extends Controller
 
             foreach ($request->besoins as $id => $data) {
                 $besoin = Besoin::findOrFail($id);
+                $ancienStatut = $besoin->statut;
+                $ancienMontant = $besoin->montant_accorde ?? 0;
 
                 if ($data['action'] === 'rejetter') {
                     $besoin->update(['statut' => 'rejete', 'montant_accorde' => 0]);
+                    
+                    // If it was valid before, subtract from budget line
+                    if ($ancienStatut === 'valide') {
+                        $ligne = LigneBudget::where([
+                            'budget_id' => $budget->id,
+                            'compte_id' => $besoin->compte_id,
+                            'service_id' => $besoin->service_id,
+                        ])->first();
+                        if ($ligne) {
+                            $ligne->montant_alloue -= $ancienMontant;
+                            $ligne->save();
+                        }
+                    }
                     continue;
                 }
 
                 // If Validated
-                $montant = $data['montant_accorde'] ?? $besoin->montant_demande;
+                $qte = $data['quantite'] ?? $besoin->quantite;
+                // Admins set price during arbitration. If it was already validated, we might have a price.
+                $prix = $data['prix_unitaire'] ?? 0;
+                $montant = $qte * $prix;
 
                 $besoin->update([
                     'statut' => 'valide',
+                    'quantite' => $qte,
+                    'prix_unitaire' => $prix,
                     'montant_accorde' => $montant
                 ]);
 
                 // Create or Update Budget Line
-                // Key is Budget + Compte + Service (if decentralized)
-                // Here assuming One Line per Account per Service
-                LigneBudget::updateOrCreate(
-                    [
-                        'budget_id' => $budget->id,
-                        'compte_id' => $besoin->compte_id,
-                        'service_id' => $besoin->service_id,
-                    ],
-                    [
-                        'montant_alloue' => DB::raw("montant_alloue + $montant") // Additive if multiple needs per same line (rare but possible) or just set. 
-                        // For this app, let's assume one massive need expression per line, or additive. 
-                        // Let's use simple assignment for now or handle existing.
-                        // Actually, let's make it simple: existing + new
-                    ]
-                );
-
-                // Correction: updateOrCreate with DB:raw is tricky in Laravel for values. 
-                // Better: find and increment.
                 $ligne = LigneBudget::firstOrNew([
                     'budget_id' => $budget->id,
                     'compte_id' => $besoin->compte_id,
                     'service_id' => $besoin->service_id,
                 ]);
-                $ligne->montant_alloue = ($ligne->montant_alloue ?? 0) + $montant;
+                
+                // Adjust delta: deduct old if it was valid, add new
+                $delta = ($ancienStatut === 'valide') ? ($montant - $ancienMontant) : $montant;
+                $ligne->montant_alloue += $delta;
                 $ligne->save();
             }
         });

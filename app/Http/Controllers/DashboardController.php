@@ -52,7 +52,7 @@ class DashboardController extends Controller
 
                 $data['besoins_stats'] = [
                     'total' => $besoins->count(),
-                    'total_demande' => $besoins->sum('montant_demande'),
+                    'total_quantite' => $besoins->sum('quantite'),
                     'cree' => $besoins->where('statut', 'cree')->count(),
                     'valide' => $besoins->where('statut', 'valide')->count(),
                     'rejete' => $besoins->where('statut', 'rejete')->count(),

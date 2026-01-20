@@ -31,9 +31,11 @@
                 <a href="{{ url('/') }}" class="nav-item {{ request()->is('/') ? 'active' : '' }}">
                     <span class="icon">📊</span> Tableau de bord
                 </a>
+                @if(Auth::user()->role === 'admin')
                 <a href="{{ route('reporting.global') }}" class="nav-item {{ request()->routeIs('reporting.*') ? 'active' : '' }}">
                     <span class="icon">📈</span> Reporting
                 </a>
+                @endif
 
                 <div class="nav-section">Budget</div>
                 <a href="{{ route('besoins.index') }}" class="nav-item {{ request()->routeIs('besoins.*') ? 'active' : '' }}">
@@ -48,7 +50,7 @@
                     <span class="icon">📊</span> Par Compte
                 </a>
                
-                <a href="{{ route('ajustements.create') }}" class="nav-item {{ request()->routeIs('ajustements.*') ? 'active' : '' }}">
+                <a href="{{ route('ajustements.index') }}" class="nav-item {{ request()->routeIs('ajustements.*') ? 'active' : '' }}">
                     <span class="icon">↔️</span> Virements
                 </a>
                 <a href="{{ route('execution.index') }}" class="nav-item {{ request()->routeIs('execution.*') ? 'active' : '' }}">
@@ -79,7 +81,12 @@
                 </div>
                 <div class="info" style="flex: 1;">
                     <p class="name">{{ Auth::user()->name ?? 'Invité' }}</p>
-                    <p class="role">{{ ucfirst(Auth::user()->role ?? '') }}</p>
+                    <p class="role" style="margin-bottom: 2px;">{{ ucfirst(Auth::user()->role ?? '') }}</p>
+                    @if(Auth::user()->service)
+                        <p class="service-name" style="font-size: 0.7rem; font-weight: 600; color: var(--primary-600); text-transform: uppercase; letter-spacing: 0.025em;">
+                            <i class="fa fa-hospital-user" style="margin-right: 4px;"></i> {{ Auth::user()->service->nom }}
+                        </p>
+                    @endif
                 </div>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
@@ -92,12 +99,15 @@
         <main class="main-content">
             <header class="top-bar">
                 <h2 class="page-title">@yield('title', 'Tableau de bord')</h2>
-                <div class="actions">
-                   <!--  <button class="btn-icon">🔔</button>
-                    <button class="btn-icon">⚙️</button> -->
+                <div class="actions" style="display: flex; align-items: center; gap: 1.5rem;">
+                    @if(Auth::user()->service)
+                        <span style="background: var(--primary-50); color: var(--primary-700); padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--primary-100);">
+                            <span class="icon" style="font-size: 1rem;">🏢</span> {{ Auth::user()->service->nom }}
+                        </span>
+                    @endif
                      <form action="{{ route('logout') }}" method="POST">
                     @csrf
-                    <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--danger);" title="Déconnexion"><i class="fa fa-sign-out"></i> Déconnexion</button>
+                    <button type="submit" style="background: none; border: none; cursor: pointer; color: var(--danger); font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem;" title="Déconnexion"><i class="fa fa-sign-out"></i> Déconnexion</button>
                 </form>
                 </div>
             </header>

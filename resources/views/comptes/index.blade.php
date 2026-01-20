@@ -21,6 +21,11 @@
                                     style="font-size: 0.75rem; margin-left: 0.5rem; color: {{ $compte->etat === 'actif' ? 'var(--success)' : 'var(--danger)' }};">
                                     {{ ucfirst($compte->etat) }}
                                 </span>
+                                @if($compte->dotation_initiale > 0)
+                                    <span style="font-size: 0.75rem; margin-left: 0.5rem; color: var(--primary); font-weight: 600;">
+                                        Dotation: {{ number_format($compte->dotation_initiale, 0, ',', ' ') }} FCFA
+                                    </span>
+                                @endif
                             </div>
                             <div>
                                 <button onclick="openCompteModal({{ $compte }})"
@@ -85,6 +90,19 @@
                     </select>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Dotation Initiale</label>
+                        <input type="number" name="dotation_initiale" value="0" step="0.01"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Prix Unitaire Réf.</label>
+                        <input type="number" name="prix_unitaire_ref" value="0" step="0.01"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                </div>
+
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Etat</label>
                     <select name="etat" required
@@ -141,6 +159,19 @@
                     </select>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Dotation Initiale</label>
+                        <input type="number" id="edit_dotation_initiale" name="dotation_initiale" step="0.01"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Prix Unitaire Réf.</label>
+                        <input type="number" id="edit_prix_unitaire_ref" name="prix_unitaire_ref" step="0.01"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                </div>
+
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Etat</label>
                     <select id="edit_etat" name="etat" required
@@ -179,6 +210,8 @@
             document.getElementById('edit_libelle').value = compte.libelle;
             document.getElementById('edit_type').value = compte.type;
             document.getElementById('edit_etat').value = compte.etat || 'actif'; // set default
+            document.getElementById('edit_dotation_initiale').value = compte.dotation_initiale || 0;
+            document.getElementById('edit_prix_unitaire_ref').value = compte.prix_unitaire_ref || 0;
             document.getElementById('edit_parent_id').value = compte.parent_id || '';
 
             form.action = `/comptes/${compte.id}`;

@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/budgets/{budget}/activate', [BudgetYearController::class, 'activate'])->name('budgets.activate');
 
     // Adjustments (Virements)
+    Route::get('/ajustements', [AjustementController::class, 'index'])->name('ajustements.index');
     Route::get('/ajustements/creer', [AjustementController::class, 'create'])->name('ajustements.create');
     Route::post('/ajustements', [AjustementController::class, 'store'])->name('ajustements.store');
 
@@ -65,6 +66,7 @@ Route::middleware('auth')->group(function () {
 
     // Execution
     Route::get('/execution/historique', [ExecutionController::class, 'history'])->name('execution.history');
+    Route::get('/execution/facture/{execution}', [ExecutionController::class, 'invoice'])->name('execution.facture');
     Route::get('/execution', [ExecutionController::class, 'index'])->name('execution.index');
     Route::post('/execution', [ExecutionController::class, 'store'])->name('execution.store');
 

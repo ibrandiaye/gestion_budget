@@ -23,6 +23,8 @@ class CompteController extends Controller
             'numero' => 'required|string|max:50|unique:comptes',
             'libelle' => 'required|string|max:255',
             'type' => 'required|in:Fonctionnement,Investissement',
+            'dotation_initiale' => 'nullable|numeric|min:0',
+            'prix_unitaire_ref' => 'nullable|numeric|min:0',
             'parent_id' => 'nullable|exists:comptes,id',
             'etat' => 'required|in:actif,inactif',
         ]);
@@ -38,6 +40,8 @@ class CompteController extends Controller
             'numero' => 'required|string|max:50|unique:comptes,numero,' . $compte->id,
             'libelle' => 'required|string|max:255',
             'type' => 'required|in:Fonctionnement,Investissement',
+            'dotation_initiale' => 'nullable|numeric|min:0',
+            'prix_unitaire_ref' => 'nullable|numeric|min:0',
             'parent_id' => 'nullable|exists:comptes,id',
             'etat' => 'required|in:actif,inactif',
         ]);

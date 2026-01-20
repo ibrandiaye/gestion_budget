@@ -46,7 +46,8 @@ class BesoinController extends Controller
     {
         $request->validate([
             'compte_id' => 'required|exists:comptes,id',
-            'montant_demande' => 'required|numeric|min:0',
+            'libelle' => 'required|string|max:255',
+            'quantite' => 'required|integer|min:1',
             'justification' => 'required|string|max:1000',
         ]);
 
@@ -61,7 +62,8 @@ class BesoinController extends Controller
             'budget_id' => $budget->id,
             'service_id' => Auth::user()->service_id,
             'compte_id' => $request->compte_id,
-            'montant_demande' => $request->montant_demande,
+            'libelle' => $request->libelle,
+            'quantite' => $request->quantite,
             'justification' => $request->justification,
             'statut' => 'cree',
         ]);

@@ -10,6 +10,15 @@ use Illuminate\Support\Facades\DB;
 
 class AjustementController extends Controller
 {
+    public function index()
+    {
+        $ajustements = Ajustement::with(['budget', 'sourceLigne.compte', 'sourceLigne.service', 'destLigne.compte', 'destLigne.service'])
+            ->latest('date')
+            ->get();
+
+        return view('ajustements.index', compact('ajustements'));
+    }
+
     public function create()
     {
         // Get active budget lines

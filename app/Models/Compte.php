@@ -9,7 +9,7 @@ class Compte extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['numero', 'libelle', 'type', 'parent_id', 'etat'];
+    protected $fillable = ['numero', 'libelle', 'type', 'dotation_initiale', 'prix_unitaire_ref', 'parent_id', 'etat'];
 
     public function parent()
     {
@@ -24,5 +24,9 @@ class Compte extends Model
     public function lignesBudget()
     {
         return $this->hasMany(LigneBudget::class);
+    }
+    public function besoins()
+    {
+        return $this->hasMany(Besoin::class);
     }
 }

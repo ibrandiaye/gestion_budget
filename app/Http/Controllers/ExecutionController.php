@@ -13,10 +13,17 @@ class ExecutionController extends Controller
     {
         // View Budget Lines to execute against
         // Filter by user service if not admin
-        $query = LigneBudget::with(['compte', 'service', 'budget']);
+        $query = LigneBudget::with(['compte', 'service', 'budget', 'compte.besoins' => function($q) {
+            $q->where('statut', 'valide');
+            // Ensure we only get needs for the current service and budget
+        }]);
 
         if (Auth::check() && Auth::user()->role !== 'admin') {
             $query->where('service_id', Auth::user()->service_id);
+            $query->with(['compte.besoins' => function($q) {
+                $q->where('statut', 'valide')
+                  ->where('service_id', Auth::user()->service_id);
+            }]);
         }
 
         $lignes = $query->get();
@@ -28,33 +35,69 @@ class ExecutionController extends Controller
     {
         $request->validate([
             'ligne_budget_id' => 'required|exists:lignes_budget,id',
-            'montant' => 'required|numeric|min:1',
+            'items' => 'required|array|min:1',
+            'items.*.besoin_id' => 'required|exists:besoins,id',
+            'items.*.quantite' => 'required|integer|min:1',
             'date' => 'required|date',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
         ]);
 
         $ligne = LigneBudget::findOrFail($request->ligne_budget_id);
+        
+        // Calculate global total and prepare details
+        $totalMontant = 0;
+        $itemsToProcess = [];
 
-        // Check Availability (Engagement limit)
-        $disponible = $ligne->montant_alloue - $ligne->montant_engage;
+        foreach ($request->items as $itemData) {
+            $besoin = \App\Models\Besoin::findOrFail($itemData['besoin_id']);
+            
+            // Security check
+            if ($besoin->compte_id !== $ligne->compte_id || $besoin->service_id !== $ligne->service_id) {
+                continue; // Or abort
+            }
 
-        if ($request->montant > $disponible) {
-            return back()->withErrors(['montant' => "Montant indisponible. Solde actuel: " . number_format($disponible, 0, ',', ' ') . " FCFA"]);
+            $itemMontant = $itemData['quantite'] * ($besoin->prix_unitaire ?? 0);
+            $totalMontant += $itemMontant;
+            
+            $itemsToProcess[] = [
+                'besoin_id' => $besoin->id,
+                'quantite' => $itemData['quantite'],
+                'prix_unitaire' => $besoin->prix_unitaire ?? 0,
+                'montant' => $itemMontant
+            ];
         }
 
-        // Create Execution (Engagement)
-        Execution::create([
-            'ligne_budget_id' => $ligne->id,
-            'montant' => $request->montant,
-            'date' => $request->date,
-            'type' => 'engagement',
-            'description' => $request->description,
-        ]);
+        if (empty($itemsToProcess)) {
+            return back()->withErrors(['msg' => "Aucun article valide sélectionné."]);
+        }
 
-        // Update Ligne stats
-        $ligne->increment('montant_engage', $request->montant);
+        // Check Availability
+        $disponible = $ligne->montant_alloue - $ligne->montant_engage;
 
-        return back()->with('success', 'Dépense engagée avec succès.');
+        if ($totalMontant > $disponible) {
+            return back()->withErrors(['montant' => "Montant insuffisant. Total Requis: " . number_format($totalMontant, 0, ',', ' ') . " FCFA, Disponible: " . number_format($disponible, 0, ',', ' ') . " FCFA"]);
+        }
+
+        \DB::transaction(function() use ($ligne, $request, $totalMontant, $itemsToProcess) {
+            // Create Execution (Engagement)
+            $execution = Execution::create([
+                'ligne_budget_id' => $ligne->id,
+                'montant' => $totalMontant,
+                'date' => $request->date,
+                'type' => 'engagement',
+                'description' => $request->description ?? ("Dépense groupée (" . count($itemsToProcess) . " articles)"),
+            ]);
+
+            // Save Details
+            foreach ($itemsToProcess as $item) {
+                $execution->details()->create($item);
+            }
+
+            // Update Ligne stats
+            $ligne->increment('montant_engage', $totalMontant);
+        });
+
+        return back()->with('success', 'Dépense groupée engagée avec succès.');
     }
 
     public function history()
@@ -72,5 +115,17 @@ class ExecutionController extends Controller
         $executions = $query->paginate(20);
 
         return view('execution.history', compact('executions'));
+    }
+
+    public function invoice(Execution $execution)
+    {
+        $execution->load(['ligneBudget.compte', 'ligneBudget.service', 'ligneBudget.budget', 'details.besoin']);
+        
+        // Authorization check
+        if (Auth::user()->role !== 'admin' && Auth::user()->service_id !== $execution->ligneBudget->service_id) {
+            abort(403, "Vous n'êtes pas autorisé à voir cette facture.");
+        }
+
+        return view('execution.invoice', compact('execution'));
     }
 }

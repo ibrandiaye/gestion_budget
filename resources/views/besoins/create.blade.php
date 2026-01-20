@@ -27,15 +27,23 @@
                 </div>
 
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Montant Estimatif (FCFA)</label>
-                    <input type="number" name="montant_demande" required min="0" step="100" placeholder="0"
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Libellé du besoin</label>
+                    <input type="text" name="libelle" required placeholder="Ex: Achat de rames de papier"
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit;">
-                    @error('montant_demande') <div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">
+                    @error('libelle') <div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">
+                    {{ $message }}</div> @enderror
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Quantité</label>
+                    <input type="number" name="quantite" required min="1" value="1"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit;">
+                    @error('quantite') <div style="color: var(--danger); font-size: 0.85rem; margin-top: 0.25rem;">
                     {{ $message }}</div> @enderror
                 </div>
 
                 <div style="margin-bottom: 2rem;">
-                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Justification du besoin</label>
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Justification / Détails supplémentaires</label>
                     <textarea name="justification" required rows="4"
                         placeholder="Expliquez pourquoi ce budget est nécessaire..."
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; resize: vertical;"></textarea>
