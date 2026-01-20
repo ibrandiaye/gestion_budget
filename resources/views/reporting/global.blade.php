@@ -4,29 +4,36 @@
 
 @section('content')
     <div class="grid-stats" style="margin-bottom: 2rem;">
-        <div class="stat-card"
-            style="background: white; padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--border-color);">
-            <h3 style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Budget
-                Global</h3>
-            <div style="font-size: 2rem; font-weight: 700; color: var(--slate-900);">
-                {{ number_format($totalAlloue, 0, ',', ' ') }} <span style="font-size: 1rem;">FCFA</span></div>
+        <div class="stat-card">
+            <h3 class="stat-title">Budget Global</h3>
+            <div class="stat-value">
+                {{ number_format($totalAlloue, 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
+            </div>
+            <div class="stat-trend">
+                <span>Total alloué sur l'exercice</span>
+            </div>
         </div>
 
-        <div class="stat-card"
-            style="background: white; padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--border-color);">
-            <h3 style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Total
-                Engagé</h3>
-            <div style="font-size: 2rem; font-weight: 700; color: var(--primary-600);">
-                {{ number_format($totalEngage, 0, ',', ' ') }} <span style="font-size: 1rem;">FCFA</span></div>
+        <div class="stat-card">
+            <h3 class="stat-title">Total Engagé</h3>
+            <div class="stat-value" style="color: var(--primary-600);">
+                {{ number_format($totalEngage, 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
+            </div>
+            <div class="stat-trend" style="margin-top: 5px;">
+                <div style="flex: 1; height: 6px; background: var(--slate-100); border-radius: 3px; overflow: hidden;">
+                    <div style="width: {{ min($tauxExecution, 100) }}%; height: 100%; background: var(--primary-500);"></div>
+                </div>
+                <span style="font-weight: 700;">{{ number_format($tauxExecution, 1) }}%</span>
+            </div>
         </div>
 
-        <div class="stat-card"
-            style="background: white; padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--border-color);">
-            <h3 style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase;">Taux
-                d'Exécution Global</h3>
-            <div
-                style="font-size: 2rem; font-weight: 700; color: {{ $tauxExecution > 90 ? 'var(--danger)' : ($tauxExecution > 50 ? 'var(--warning)' : 'var(--success)') }};">
-                {{ number_format($tauxExecution, 1) }}%
+        <div class="stat-card">
+            <h3 class="stat-title">Solde Disponible</h3>
+            <div class="stat-value" style="color: var(--success);">
+                {{ number_format($totalAlloue - $totalEngage, 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
+            </div>
+            <div class="stat-trend">
+                <span>Reste disponible</span>
             </div>
         </div>
     </div>

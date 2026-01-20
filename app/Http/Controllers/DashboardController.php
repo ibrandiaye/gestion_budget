@@ -17,7 +17,7 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         // Get active budget
-        $budget = Budget::where('statut', 'actif')->first();
+        $budget = Budget::where('statut', 'actif')->first() ?: Budget::latest()->first();
 
         // Initialize variables
         $data = [

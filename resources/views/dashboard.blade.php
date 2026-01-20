@@ -6,30 +6,59 @@
     @if(Auth::user()->role === 'admin')
     <div class="grid-stats">
         <div class="stat-card">
-            <h3 class="stat-title">Budget Total ({{ $data['annee'] }})</h3>
-            <div class="stat-value" style="color: var(--primary);">{{ number_format($data['total_alloue'], 0, ',', ' ') }}
-                FCFA</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 class="stat-title">Budget Total ({{ $data['annee'] }})</h3>
+                    <div class="stat-value" style="color: var(--slate-900);">
+                        {{ number_format($data['total_alloue'], 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
+                    </div>
+                </div>
+                <div style="background: var(--primary-50); color: var(--primary-600); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    💰
+                </div>
+            </div>
             <div class="stat-trend">
-                <span>Budget Actif</span>
+                <span style="background: var(--success-light); color: var(--success);">● Budget Actif</span>
+                <span style="color: var(--text-muted); font-size: 0.75rem;">Exercice en cours</span>
             </div>
         </div>
 
         <div class="stat-card">
-            <h3 class="stat-title">Montant Engagé</h3>
-            <div class="stat-value">{{ number_format($data['total_engage'], 0, ',', ' ') }} FCFA</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 class="stat-title">Montant Engagé</h3>
+                    <div class="stat-value" style="color: var(--primary-600);">
+                        {{ number_format($data['total_engage'], 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
+                    </div>
+                </div>
+                <div style="background: var(--primary-50); color: var(--primary-600); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    📝
+                </div>
+            </div>
             <div class="stat-trend">
-                <span style="color: {{ $data['taux_execution'] > 80 ? 'var(--danger)' : 'var(--warning)' }}">
-                    {{ $data['taux_execution'] }}% du budget
+                <div style="flex: 1; height: 6px; background: var(--slate-100); border-radius: 3px; overflow: hidden; margin-top: 5px;">
+                    <div style="width: {{ min($data['taux_execution'], 100) }}%; height: 100%; background: var(--primary-500); border-radius: 3px;"></div>
+                </div>
+                <span style="font-weight: 700; color: {{ $data['taux_execution'] > 80 ? 'var(--danger)' : 'var(--primary-700)' }}">
+                    {{ $data['taux_execution'] }}%
                 </span>
             </div>
         </div>
 
         <div class="stat-card">
-            <h3 class="stat-title">Solde Disponible</h3>
-            <div class="stat-value" style="color: var(--success);">
-                {{ number_format($data['total_disponible'], 0, ',', ' ') }} FCFA</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h3 class="stat-title">Solde Disponible</h3>
+                    <div class="stat-value" style="color: var(--success);">
+                        {{ number_format($data['total_disponible'], 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
+                    </div>
+                </div>
+                <div style="background: var(--success-light); color: var(--success); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    🔓
+                </div>
+            </div>
             <div class="stat-trend">
-                <span>Reste à dépenser</span>
+                <span style="color: var(--text-muted);">Reste à dépenser</span>
             </div>
         </div>
     </div>
