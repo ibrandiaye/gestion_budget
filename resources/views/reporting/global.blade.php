@@ -3,8 +3,21 @@
 @section('title', 'Reporting Global')
 
 @section('content')
+    <style>
+        .grid-stats {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 1.5rem !important;
+            margin-bottom: 2rem !important;
+        }
+        @media (max-width: 768px) {
+            .grid-stats {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
     <div class="grid-stats" style="margin-bottom: 2rem;">
-        <div class="stat-card">
+        <div class="stat-card card">
             <h3 class="stat-title">Budget Global</h3>
             <div class="stat-value">
                 {{ number_format($totalAlloue, 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
@@ -14,7 +27,7 @@
             </div>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card card">
             <h3 class="stat-title">Total Engagé</h3>
             <div class="stat-value" style="color: var(--primary-600);">
                 {{ number_format($totalEngage, 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
@@ -27,7 +40,7 @@
             </div>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card card">
             <h3 class="stat-title">Solde Disponible</h3>
             <div class="stat-value" style="color: var(--success);">
                 {{ number_format($totalAlloue - $totalEngage, 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>

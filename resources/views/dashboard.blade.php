@@ -4,8 +4,21 @@
 
 @section('content')
     @if(Auth::user()->role === 'admin')
+    <style>
+        .grid-stats {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 1.5rem !important;
+            margin-bottom: 2rem !important;
+        }
+        @media (max-width: 768px) {
+            .grid-stats {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
     <div class="grid-stats">
-        <div class="stat-card">
+        <div class="stat-card card" style="background-color: white;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <h3 class="stat-title">Budget Total ({{ $data['annee'] }})</h3>
@@ -23,7 +36,7 @@
             </div>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card card" style="background-color: white;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <h3 class="stat-title">Montant Engagé</h3>
@@ -35,7 +48,7 @@
                     📝
                 </div>
             </div>
-            <div class="stat-trend">
+            <div class="stat-trend" style="background-color: white;">
                 <div style="flex: 1; height: 6px; background: var(--slate-100); border-radius: 3px; overflow: hidden; margin-top: 5px;">
                     <div style="width: {{ min($data['taux_execution'], 100) }}%; height: 100%; background: var(--primary-500); border-radius: 3px;"></div>
                 </div>
@@ -45,7 +58,7 @@
             </div>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card card">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
                     <h3 class="stat-title">Solde Disponible</h3>
