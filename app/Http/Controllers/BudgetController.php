@@ -85,6 +85,7 @@ class BudgetController extends Controller
             $budget = Budget::where('statut', 'actif')->first();
 
             if (!$budget) {
+                // If no budget, create one? Or fail? Logic suggests creating one here.
                 $budget = Budget::create([
                     'annee' => date('Y'),
                     'statut' => 'actif',
@@ -92,6 +93,44 @@ class BudgetController extends Controller
                     'date_fin' => date('Y-12-31')
                 ]);
             }
+
+            // --- VALIDATION START ---
+            // Calculate total projected amount for this account
+            // We need to fetch all needs for this account, not just the submitted ones, 
+            // to ensure the TOTAL sum respects the dotation.
+            // However, the request might contain only a subset or all. 
+            // A safer approach: fetch the account first.
+            
+            // Assume all needs in request belong to the same account (or we check first)
+            $firstBesoinId = array_key_first($request->besoins);
+            $firstBesoin = Besoin::findOrFail($firstBesoinId);
+            $compte = Compte::findOrFail($firstBesoin->compte_id);
+            
+            // Calculate Current Validated Total (excluding needs being updated in this request)
+            $existingTotal = Besoin::where('compte_id', $compte->id)
+                ->where('budget_id', $budget->id)
+                ->where('statut', 'valide')
+                ->whereNotIn('id', array_keys($request->besoins))
+                ->sum('montant_accorde');
+
+            $newPropsalTotal = 0;
+            foreach ($request->besoins as $id => $data) {
+                if ($data['action'] === 'valider') {
+                    $qte = $data['quantite'] ?? 0;
+                    $prix = $data['prix_unitaire'] ?? 0;
+                    $newPropsalTotal += ($qte * $prix);
+                }
+            }
+
+            $projectedTotal = $existingTotal + $newPropsalTotal;
+
+            if ($compte->dotation_initiale > 0 && $projectedTotal > $compte->dotation_initiale) {
+                $depassement = $projectedTotal - $compte->dotation_initiale;
+                $message = "Le montant total accordé (" . number_format($projectedTotal, 0, ',', ' ') . " FCFA) dépasse la dotation du compte (" . number_format($compte->dotation_initiale, 0, ',', ' ') . " FCFA). Dépassement de : " . number_format($depassement, 0, ',', ' ') . " FCFA.";
+                
+                throw \Illuminate\Validation\ValidationException::withMessages(['error' => $message]);
+            }
+            // --- VALIDATION END ---
 
             foreach ($request->besoins as $id => $data) {
                 $besoin = Besoin::findOrFail($id);

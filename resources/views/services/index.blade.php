@@ -3,6 +3,17 @@
 @section('title', 'Gestion des Services')
 
 @section('content')
+    @if (session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
         <!-- List of Services -->
         <div class="card">
@@ -146,7 +157,8 @@
             document.getElementById('edit_chef_service').value = service.chef_service || '';
             document.getElementById('edit_departement').value = service.departement || '';
 
-            form.action = `/services/${service.id}`;
+            //form.action = `/services/${service.id}`;
+            form.action = "{{ route('services.update', $service->id) }}";
             modal.style.display = 'flex';
         }
 

@@ -9,7 +9,7 @@
                 ← Retour à la liste des comptes
             </a>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1rem;">
                 <!-- Dotation Card -->
                 <div class="card" style="padding: 1.5rem; border-left: 4px solid var(--primary);">
                     <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem;">Dotation du Compte</div>
@@ -42,6 +42,25 @@
             {{ $besoins->count() }} demande(s) en attente
         </div>
     </div>
+
+    @if ($errors->any())
+        <div style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+            <div style="font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                ⚠️ Erreur de Validation
+            </div>
+            <ul style="margin: 0; padding-left: 1.5rem;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+    
+    @if(session('success'))
+        <div style="background: #dcfce7; border: 1px solid #bbf7d0; color: #166534; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+            ✅ {{ session('success') }}
+        </div>
+    @endif
 
     <form action="{{ route('budget.valider') }}" method="POST">
         @csrf
@@ -160,15 +179,46 @@
                 
                 grandTotalDisplay.textContent = formatNumber(grandTotal);
 
-                // Visual warning if exceeding dotation
                 if (grandTotal > dotation && dotation > 0) {
+                    const diff = grandTotal - dotation;
                     grandTotalDisplay.parentElement.style.color = 'var(--danger)';
                     grandTotalDisplay.parentElement.style.background = '#fee2e2';
                     grandTotalDisplay.parentElement.style.padding = '0.5rem';
                     grandTotalDisplay.parentElement.style.borderRadius = '4px';
+                    
+                    // Show error message if not exists
+                    let errorMsg = document.getElementById('budget-error-msg');
+                    if (!errorMsg) {
+                        errorMsg = document.createElement('div');
+                        errorMsg.id = 'budget-error-msg';
+                        errorMsg.style.color = 'var(--danger)';
+                        errorMsg.style.fontWeight = 'bold';
+                        errorMsg.style.marginTop = '1rem';
+                        errorMsg.style.textAlign = 'right';
+                        document.querySelector('tfoot td[colspan="4"]').appendChild(errorMsg);
+                    }
+                    errorMsg.innerHTML = `⚠️ Dépassement de : ${formatNumber(diff)} FCFA`;
+
+                    // Disable Submit Button
+                    const submitBtn = document.querySelector('button[type="submit"]');
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.5';
+                    submitBtn.style.cursor = 'not-allowed';
+                    submitBtn.title = "Impossible de valider : le budget est dépassé.";
+
                 } else {
                     grandTotalDisplay.parentElement.style.color = 'var(--primary-700)';
                     grandTotalDisplay.parentElement.style.background = 'transparent';
+                    
+                    const errorMsg = document.getElementById('budget-error-msg');
+                    if (errorMsg) errorMsg.remove();
+
+                    // Enable Submit Button
+                    const submitBtn = document.querySelector('button[type="submit"]');
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                    submitBtn.style.cursor = 'pointer';
+                    submitBtn.title = "";
                 }
             }
 

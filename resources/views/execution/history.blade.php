@@ -23,7 +23,6 @@
                     <tr
                         style="border-bottom: 1px solid var(--border-color); text-align: left; font-size: 0.85rem; color: var(--text-muted);">
                         <th style="padding: 1rem;">Date</th>
-                        <th style="padding: 1rem;">Service</th>
                         <th style="padding: 1rem;">Compte</th>
                         <th style="padding: 1rem;">Détails (Articles)</th>
                         <th style="padding: 1rem; text-align: center;">Nb Art.</th>
@@ -37,12 +36,13 @@
                             <td style="padding: 1rem; font-family: monospace;">
                                 {{ \Carbon\Carbon::parse($execution->date)->format('d/m/Y') }}</td>
                             <td style="padding: 1rem;">
-                                <div style="font-weight: 500;">{{ $execution->ligneBudget->service->nom }}</div>
-                            </td>
-                            <td style="padding: 1rem;">
                                 <div style="font-weight: 500;">{{ $execution->ligneBudget->compte->libelle }}</div>
                                 <div style="font-size: 0.8rem; color: var(--text-muted);">
-                                    {{ $execution->ligneBudget->compte->numero }}</div>
+                                    {{ $execution->ligneBudget->compte->numero }} 
+                                    @if(Auth::user()->role === 'admin')
+                                        | {{ $execution->ligneBudget->service->nom }}
+                                    @endif
+                                </div>
                             </td>
                             <td style="padding: 1rem; color: var(--slate-600); font-weight: 600;">
                                 @if($execution->details->count() > 0)

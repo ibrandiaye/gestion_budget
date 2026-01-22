@@ -36,6 +36,7 @@ class CompteController extends Controller
 
     public function update(Request $request, Compte $compte)
     {
+
         $request->validate([
             'numero' => 'required|string|max:50|unique:comptes,numero,' . $compte->id,
             'libelle' => 'required|string|max:255',
@@ -45,6 +46,7 @@ class CompteController extends Controller
             'parent_id' => 'nullable|exists:comptes,id',
             'etat' => 'required|in:actif,inactif',
         ]);
+       // dd($compte);    
 
         $compte->update($request->all());
 

@@ -3,11 +3,25 @@
 @section('title', 'Plan Comptable Budgétaire')
 
 @section('content')
+    @if ($errors->any())
+        <div
+            style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+            <div style="font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                ⚠️ Erreur de Validation
+            </div>
+            <ul style="margin: 0; padding-left: 1.5rem;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
         <!-- List of Comptes -->
         <div class="card">
             <h3 style="margin-bottom: 1.5rem;">Comptes Budgétaires</h3>
             <ul style="list-style: none; padding: 0;">
+
                 @foreach($comptes as $compte)
                     <li style="margin-bottom: 0.5rem; border-bottom: 1px solid var(--slate-100); padding-bottom: 0.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -214,7 +228,10 @@
             document.getElementById('edit_prix_unitaire_ref').value = compte.prix_unitaire_ref || 0;
             document.getElementById('edit_parent_id').value = compte.parent_id || '';
 
-            form.action = `/comptes/${compte.id}`;
+            //form.action = `/comptes/${compte.id}`;
+            let updateUrl = "{{ route('comptes.update', ':id') }}";
+            form.action = updateUrl.replace(':id', compte.id);
+            console.log(form.action);
             modal.style.display = 'flex';
         }
 

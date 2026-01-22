@@ -11,11 +11,8 @@ class ExecutionController extends Controller
 {
     public function index()
     {
-        // View Budget Lines to execute against
-        // Filter by user service if not admin
         $query = LigneBudget::with(['compte', 'service', 'budget', 'compte.besoins' => function($q) {
             $q->where('statut', 'valide');
-            // Ensure we only get needs for the current service and budget
         }]);
 
         if (Auth::check() && Auth::user()->role !== 'admin') {
@@ -26,9 +23,22 @@ class ExecutionController extends Controller
             }]);
         }
 
-        $lignes = $query->get();
+        $lignesRaw = $query->get();
 
-        return view('execution.index', compact('lignes'));
+        // Group by Account (Compte)
+        $comptes = $lignesRaw->groupBy('compte_id')->map(function ($items) {
+            $compte = $items->first()->compte;
+            
+            return (object) [
+                'compte' => $compte,
+                'total_alloue' => $items->sum('montant_alloue'),
+                'total_engage' => $items->sum('montant_engage'),
+                'solde_disponible' => $items->sum('montant_alloue') - $items->sum('montant_engage'),
+                'lignes' => $items // Keep original lines for service selection in modal
+            ];
+        });
+
+        return view('execution.index', compact('comptes'));
     }
 
     public function store(Request $request)
