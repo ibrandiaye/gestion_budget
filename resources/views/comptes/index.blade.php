@@ -31,6 +31,9 @@
                                 <span style="font-weight: 600;">{{ $compte->libelle }}</span>
                                 <span
                                     style="font-size: 0.75rem; background: var(--slate-100); padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.5rem;">{{ $compte->type }}</span>
+                                @if($compte->is_marche)
+                                    <span style="font-size: 0.7rem; background: var(--warning); color: white; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.5rem;">À MARCHÉ</span>
+                                @endif
                                 <span
                                     style="font-size: 0.75rem; margin-left: 0.5rem; color: {{ $compte->etat === 'actif' ? 'var(--success)' : 'var(--danger)' }};">
                                     {{ ucfirst($compte->etat) }}
@@ -104,6 +107,14 @@
                     </select>
                 </div>
 
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="is_marche" style="width: 1rem; height: 1rem;">
+                        <span style="font-weight: 500;">Compte à marché</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">(nécessite un fournisseur)</span>
+                    </label>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div>
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Dotation Initiale</label>
@@ -173,6 +184,14 @@
                     </select>
                 </div>
 
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="edit_is_marche" name="is_marche" style="width: 1rem; height: 1rem;">
+                        <span style="font-weight: 500;">Compte à marché</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">(nécessite un fournisseur)</span>
+                    </label>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                     <div>
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Dotation Initiale</label>
@@ -223,15 +242,14 @@
             document.getElementById('edit_numero').value = compte.numero;
             document.getElementById('edit_libelle').value = compte.libelle;
             document.getElementById('edit_type').value = compte.type;
-            document.getElementById('edit_etat').value = compte.etat || 'actif'; // set default
+            document.getElementById('edit_is_marche').checked = compte.is_marche || false;
+            document.getElementById('edit_etat').value = compte.etat || 'actif';
             document.getElementById('edit_dotation_initiale').value = compte.dotation_initiale || 0;
             document.getElementById('edit_prix_unitaire_ref').value = compte.prix_unitaire_ref || 0;
             document.getElementById('edit_parent_id').value = compte.parent_id || '';
 
-            //form.action = `/comptes/${compte.id}`;
             let updateUrl = "{{ route('comptes.update', ':id') }}";
             form.action = updateUrl.replace(':id', compte.id);
-            console.log(form.action);
             modal.style.display = 'flex';
         }
 

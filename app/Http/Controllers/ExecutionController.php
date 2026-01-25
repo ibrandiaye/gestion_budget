@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Execution;
 use App\Models\LigneBudget;
+use App\Models\Article;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,16 +12,12 @@ class ExecutionController extends Controller
 {
     public function index()
     {
-        $query = LigneBudget::with(['compte', 'service', 'budget', 'compte.besoins' => function($q) {
-            $q->where('statut', 'valide');
+        $query = LigneBudget::with(['compte', 'service', 'budget', 'compte.articles' => function($q) {
+            $q->where('actif', true);
         }]);
 
         if (Auth::check() && Auth::user()->role !== 'admin') {
             $query->where('service_id', Auth::user()->service_id);
-            $query->with(['compte.besoins' => function($q) {
-                $q->where('statut', 'valide')
-                  ->where('service_id', Auth::user()->service_id);
-            }]);
         }
 
         $lignesRaw = $query->get();
@@ -46,34 +43,42 @@ class ExecutionController extends Controller
         $request->validate([
             'ligne_budget_id' => 'required|exists:lignes_budget,id',
             'items' => 'required|array|min:1',
-            'items.*.besoin_id' => 'required|exists:besoins,id',
+            'items.*.article_id' => 'required|exists:articles,id',
             'items.*.quantite' => 'required|integer|min:1',
+            'items.*.montant' => 'required|numeric|min:0',
             'date' => 'required|date',
             'description' => 'nullable|string',
+            'fournisseur' => 'nullable|string|max:255',
         ]);
 
-        $ligne = LigneBudget::findOrFail($request->ligne_budget_id);
+        $ligne = LigneBudget::with('compte')->findOrFail($request->ligne_budget_id);
+        
+        // Check if fournisseur is required for marché compte
+        if ($ligne->compte->is_marche && empty($request->fournisseur)) {
+            return back()->withErrors(['fournisseur' => "Le fournisseur est obligatoire pour les comptes à marché."]);
+        }
         
         // Calculate global total and prepare details
         $totalMontant = 0;
         $itemsToProcess = [];
 
         foreach ($request->items as $itemData) {
-            $besoin = \App\Models\Besoin::findOrFail($itemData['besoin_id']);
+            $article = Article::findOrFail($itemData['article_id']);
             
             // Security check
-            if ($besoin->compte_id !== $ligne->compte_id || $besoin->service_id !== $ligne->service_id) {
+            if ($article->compte_id !== $ligne->compte_id) {
                 continue; // Or abort
             }
 
-            $itemMontant = $itemData['quantite'] * ($besoin->prix_unitaire ?? 0);
+            $itemMontant = floatval($itemData['montant']);
             $totalMontant += $itemMontant;
             
             $itemsToProcess[] = [
-                'besoin_id' => $besoin->id,
+                'article_id' => $article->id,
                 'quantite' => $itemData['quantite'],
-                'prix_unitaire' => $besoin->prix_unitaire ?? 0,
-                'montant' => $itemMontant
+                'prix_unitaire' => $itemData['quantite'] > 0 ? $itemMontant / $itemData['quantite'] : 0,
+                'montant' => $itemMontant,
+                'fournisseur' => $request->fournisseur,
             ];
         }
 
@@ -112,7 +117,7 @@ class ExecutionController extends Controller
 
     public function history()
     {
-        $query = Execution::with(['ligneBudget.compte', 'ligneBudget.service', 'ligneBudget.budget'])
+        $query = Execution::with(['ligneBudget.compte', 'ligneBudget.service', 'ligneBudget.budget', 'details.article'])
             ->orderByDesc('date')
             ->orderByDesc('created_at');
 
@@ -129,7 +134,7 @@ class ExecutionController extends Controller
 
     public function invoice(Execution $execution)
     {
-        $execution->load(['ligneBudget.compte', 'ligneBudget.service', 'ligneBudget.budget', 'details.besoin']);
+        $execution->load(['ligneBudget.compte', 'ligneBudget.service', 'ligneBudget.budget', 'details.article']);
         
         // Authorization check
         if (Auth::user()->role !== 'admin' && Auth::user()->service_id !== $execution->ligneBudget->service_id) {

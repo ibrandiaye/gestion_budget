@@ -57,6 +57,17 @@
                     <span class="icon">💸</span> Exécution
                 </a>
 
+                <div class="nav-section">Dépenses</div>
+                <a href="{{ route('commandes.index') }}" class="nav-item {{ request()->routeIs('commandes.*') ? 'active' : '' }}">
+                    <span class="icon">📋</span> Commandes
+                </a>
+                <a href="{{ route('engagements.index') }}" class="nav-item {{ request()->routeIs('engagements.*') ? 'active' : '' }}">
+                    <span class="icon">📄</span> Engagements
+                </a>
+                <a href="{{ route('mandats.index') }}" class="nav-item {{ request()->routeIs('mandats.*') ? 'active' : '' }}">
+                    <span class="icon">💳</span> Mandats
+                </a>
+
                 
                 <div class="nav-section">Administration</div>
                 <a href="{{ route('users.index') }}" class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
@@ -68,8 +79,20 @@
                   <a href="{{ route('comptes.index') }}" class="nav-item {{ request()->routeIs('comptes.*') ? 'active' : '' }}">
                     <span class="icon">📑</span> Comptes
                 </a>
+                <a href="{{ route('articles.index') }}" class="nav-item {{ request()->routeIs('articles.*') ? 'active' : '' }}">
+                    <span class="icon">📦</span> Articles
+                </a>
+                <a href="{{ route('fournisseurs.index') }}" class="nav-item {{ request()->routeIs('fournisseurs.*') ? 'active' : '' }}">
+                    <span class="icon">🏪</span> Fournisseurs
+                </a>
                  <a href="{{ route('budgets.index') }}" class="nav-item {{ request()->routeIs('budgets.*') ? 'active' : '' }}">
                     <span class="icon">📅</span> Exercices
+                </a>
+                @endif
+
+                @if(Auth::user()->role === 'comptable')
+                 <a href="{{ route('mandats.index') }}" class="nav-item {{ request()->routeIs('mandats.*') ? 'active' : '' }}">
+                    <span class="icon">💳</span> Mandats
                 </a>
                 @endif
                

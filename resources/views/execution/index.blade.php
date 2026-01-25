@@ -51,7 +51,7 @@
                 <!-- Actions -->
                 <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; text-align: right;">
                     <button
-                        onclick="openModal({{ $stat->compte->id }}, '{{ $stat->compte->libelle }}', {{ $stat->lignes->toJson() }})"
+                        onclick="openModal({{ $stat->compte->id }}, '{{ $stat->compte->libelle }}', {{ $stat->lignes->toJson() }}, {{ $stat->compte->is_marche ? 'true' : 'false' }})"
                         class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" {{ $stat->solde_disponible <= 0 ? 'disabled style=opacity:0.5;cursor:not-allowed;' : '' }}>
                         Nouvelle Dépense
                     </button>
@@ -91,6 +91,15 @@
 
                 <div id="budgetWarning" style="display: none; margin-bottom: 1.5rem; background: #fff1f2; color: #9f1239; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid #fecdd3; font-size: 0.85rem; font-weight: 600;">
                     ⚠️ Attention: Le montant dépasse le budget disponible pour ce service !
+                </div>
+
+                <div id="fournisseurContainer" style="display: none; margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">
+                        Fournisseur <span style="color: var(--danger);">*</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.5rem;">(obligatoire pour compte à marché)</span>
+                    </label>
+                    <input type="text" name="fournisseur" id="fournisseurInput" placeholder="Nom du fournisseur"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                 </div>
 
                 <div style="margin-bottom: 1.5rem;">
@@ -135,14 +144,24 @@
     <script>
         let accountLines = [];
         let currentLigne = null;
+        let currentCompte = null;
         let itemCount = 0;
 
-        function openModal(compteId, compteName, lines) {
+        function openModal(compteId, compteName, lines, isMarche) {
             accountLines = lines;
+            currentCompte = { id: compteId, nom: compteName, is_marche: isMarche };
             const modal = document.getElementById('expenseModal');
             const select = document.getElementById('modalLigneId');
             
-            document.getElementById('modalAccountName').textContent = compteName;
+            document.getElementById('modalAccountName').textContent = compteName + (isMarche ? ' (À MARCHÉ)' : '');
+            
+            // Show/hide fournisseur field
+            document.getElementById('fournisseurContainer').style.display = isMarche ? 'block' : 'none';
+            if (isMarche) {
+                document.getElementById('fournisseurInput').required = true;
+            } else {
+                document.getElementById('fournisseurInput').required = false;
+            }
             
             // Fill Services
             select.innerHTML = accountLines.map(l => 
@@ -173,7 +192,7 @@
             const div = document.createElement('div');
             div.className = 'item-row';
             div.style.display = 'grid';
-            div.style.gridTemplateColumns = '2fr 1fr auto';
+            div.style.gridTemplateColumns = '2fr 1fr 1fr auto';
             div.style.gap = '0.75rem';
             div.style.alignItems = 'end';
             div.style.padding = '1rem';
@@ -182,25 +201,30 @@
             div.id = 'item-row-' + index;
 
             let options = '<option value="">Choisir article...</option>';
-            // Filter needs by current service
-            currentLigne.compte.besoins.forEach(n => {
-                if(n.service_id == currentLigne.service_id) {
-                    options += `<option value="${n.id}" data-price="${n.prix_unitaire}">${n.libelle} (${new Intl.NumberFormat().format(n.prix_unitaire)} FCFA)</option>`;
-                }
-            });
+            // Use articles from compte
+            if (currentLigne.compte.articles) {
+                currentLigne.compte.articles.forEach(a => {
+                    options += `<option value="${a.id}">${a.designation}</option>`;
+                });
+            }
 
             div.innerHTML = `
                 <div>
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Article</label>
-                    <select name="items[${index}][besoin_id]" required onchange="calculateTotal()" class="besoin-select"
+                    <select name="items[${index}][article_id]" required class="article-select"
                         style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem;">
                         ${options}
                     </select>
                 </div>
                 <div>
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Quantité</label>
-                    <input type="number" name="items[${index}][quantite]" required min="1" value="1" oninput="calculateTotal()" class="qte-input"
+                    <input type="number" name="items[${index}][quantite]" required min="1" value="1" class="qte-input"
                         style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; text-align: center;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Montant (FCFA)</label>
+                    <input type="number" name="items[${index}][montant]" required min="0" value="0" oninput="calculateTotal()" class="montant-input"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; text-align: right;">
                 </div>
                 <button type="button" onclick="removeItem(${index})" 
                     style="background: #fee2e2; color: #b91c1c; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
@@ -225,14 +249,9 @@
             const rows = document.querySelectorAll('.item-row');
             
             rows.forEach(row => {
-                const select = row.querySelector('.besoin-select');
-                const qte = row.querySelector('.qte-input').value || 0;
-                const option = select.options[select.selectedIndex];
-                
-                if (option && option.value) {
-                    const price = parseFloat(option.getAttribute('data-price')) || 0;
-                    total += price * qte;
-                }
+                const montantInput = row.querySelector('.montant-input');
+                const montant = parseFloat(montantInput.value) || 0;
+                total += montant;
             });
             
             document.getElementById('totalDisplay').textContent = new Intl.NumberFormat().format(total) + ' FCFA';

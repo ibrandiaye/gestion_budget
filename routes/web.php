@@ -12,6 +12,11 @@ use App\Http\Controllers\BudgetYearController;
 use App\Http\Controllers\AjustementController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportingController;
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\CommandeController;
+use App\Http\Controllers\EngagementController;
+use App\Http\Controllers\MandatController;
+use App\Http\Controllers\FournisseurController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +49,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/comptes', [CompteController::class, 'store'])->name('comptes.store');
     Route::put('/comptes/{compte}', [CompteController::class, 'update'])->name('comptes.update');
     Route::delete('/comptes/{compte}', [CompteController::class, 'destroy'])->name('comptes.destroy');
+
+    // Articles (Admin Only)
+    Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
+    Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
+    Route::put('/articles/{article}', [ArticleController::class, 'update'])->name('articles.update');
+    Route::delete('/articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy');
+
+    // Fournisseurs
+    Route::get('/fournisseurs', [FournisseurController::class, 'index'])->name('fournisseurs.index');
+    Route::post('/fournisseurs', [FournisseurController::class, 'store'])->name('fournisseurs.store');
+    Route::put('/fournisseurs/{fournisseur}', [FournisseurController::class, 'update'])->name('fournisseurs.update');
+    Route::delete('/fournisseurs/{fournisseur}', [FournisseurController::class, 'destroy'])->name('fournisseurs.destroy');
+    Route::post('/fournisseurs/{fournisseur}/articles', [FournisseurController::class, 'ajouterArticle'])->name('fournisseurs.ajouter-article');
+    Route::delete('/fournisseurs/{fournisseur}/articles/{article}', [FournisseurController::class, 'supprimerArticle'])->name('fournisseurs.supprimer-article');
+    // API endpoints for dynamic loading
+    Route::get('/api/fournisseurs/compte/{compte}', [FournisseurController::class, 'pourCompte'])->name('api.fournisseurs.compte');
+    Route::get('/api/fournisseurs/{fournisseur}/articles/{compte}', [FournisseurController::class, 'articlesPourCompte'])->name('api.fournisseurs.articles');
+
 
     // Annual Budgets (Admin Only)
     Route::get('/budgets', [BudgetYearController::class, 'index'])->name('budgets.index');
@@ -79,4 +102,31 @@ Route::middleware('auth')->group(function () {
     Route::get('/export/besoins/compte', [ReportingController::class, 'exportBesoinsByCompte'])->name('export.besoins.compte');
     Route::get('/export/budget/service', [ReportingController::class, 'exportBudgetByService'])->name('export.budget.service');
     Route::get('/export/budget/compte', [ReportingController::class, 'exportBudgetByCompte'])->name('export.budget.compte');
+
+    // Commandes
+    Route::get('/commandes', [CommandeController::class, 'index'])->name('commandes.index');
+    Route::get('/commandes/creer', [CommandeController::class, 'create'])->name('commandes.create');
+    Route::post('/commandes', [CommandeController::class, 'store'])->name('commandes.store');
+    Route::get('/commandes/{commande}', [CommandeController::class, 'show'])->name('commandes.show');
+    Route::post('/commandes/{commande}/soumettre', [CommandeController::class, 'soumettre'])->name('commandes.soumettre');
+    Route::post('/commandes/{commande}/articles/{article}/valider', [CommandeController::class, 'validerArticle'])->name('commandes.valider-article');
+    Route::post('/commandes/{commande}/articles/{article}/rejeter', [CommandeController::class, 'rejeterArticle'])->name('commandes.rejeter-article');
+    Route::post('/commandes/{commande}/finaliser', [CommandeController::class, 'finaliserValidation'])->name('commandes.finaliser');
+    Route::get('/commandes/{commande}/document', [CommandeController::class, 'document'])->name('commandes.document');
+
+    // Engagements
+    Route::get('/engagements', [EngagementController::class, 'index'])->name('engagements.index');
+    Route::get('/engagements/{engagement}', [EngagementController::class, 'show'])->name('engagements.show');
+    Route::post('/engagements/{engagement}/valider', [EngagementController::class, 'valider'])->name('engagements.valider');
+    Route::post('/engagements/{engagement}/rejeter', [EngagementController::class, 'rejeter'])->name('engagements.rejeter');
+    Route::get('/engagements/{engagement}/document', [EngagementController::class, 'document'])->name('engagements.document');
+
+    // Mandats
+    Route::get('/mandats', [MandatController::class, 'index'])->name('mandats.index');
+    Route::get('/mandats/{mandat}', [MandatController::class, 'show'])->name('mandats.show');
+    Route::post('/mandats/{mandat}/valider-directeur', [MandatController::class, 'validerDirecteur'])->name('mandats.valider-directeur');
+    Route::post('/mandats/{mandat}/valider-comptable', [MandatController::class, 'validerComptable'])->name('mandats.valider-comptable');
+    Route::post('/mandats/{mandat}/refuser-comptable', [MandatController::class, 'refuserComptable'])->name('mandats.refuser-comptable');
+    Route::post('/mandats/{mandat}/requisition', [MandatController::class, 'requisition'])->name('mandats.requisition');
+    Route::get('/mandats/{mandat}/document', [MandatController::class, 'document'])->name('mandats.document');
 });

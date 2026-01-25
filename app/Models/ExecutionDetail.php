@@ -12,9 +12,11 @@ class ExecutionDetail extends Model
     protected $fillable = [
         'execution_id',
         'besoin_id',
+        'article_id',
         'quantite',
         'prix_unitaire',
         'montant',
+        'fournisseur',
     ];
 
     public function execution()
@@ -25,5 +27,10 @@ class ExecutionDetail extends Model
     public function besoin()
     {
         return $this->belongsTo(Besoin::class);
+    }
+
+    public function article()
+    {
+        return $this->belongsTo(Article::class);
     }
 }

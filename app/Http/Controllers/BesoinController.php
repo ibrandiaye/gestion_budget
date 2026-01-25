@@ -34,7 +34,10 @@ class BesoinController extends Controller
     public function create()
     {
 
-        $comptes = Compte::where('type', 'Fonctionnement')
+        $comptes = Compte::with(['articles' => function($q) {
+                $q->where('actif', true);
+            }])
+            ->where('type', 'Fonctionnement')
             ->whereNotNull('parent_id') // Only leaf accounts usually
             ->where('etat', 'actif')
             ->get();
