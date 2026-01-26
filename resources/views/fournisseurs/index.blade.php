@@ -70,19 +70,29 @@
 
                             <!-- Ajouter article -->
                             <form action="{{ route('fournisseurs.ajouter-article', $fournisseur) }}" method="POST" 
-                                style="display: flex; gap: 0.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color);">
+                                style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--border-color);">
                                 @csrf
-                                <select name="article_id" required style="flex: 2; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.85rem;">
-                                    <option value="">Ajouter un article...</option>
-                                    @foreach($articles as $art)
-                                        @if(!$fournisseur->articles->contains($art->id))
-                                            <option value="{{ $art->id }}">{{ $art->compte->numero ?? '' }} - {{ $art->designation }}</option>
-                                        @endif
-                                    @endforeach
-                                </select>
-                                <input type="number" name="prix" required min="0" placeholder="Prix" 
-                                    style="flex: 1; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.85rem; text-align: right;">
-                                <button type="submit" style="background: var(--primary); color: white; border: none; padding: 0.4rem 0.75rem; border-radius: 4px; cursor: pointer;">+</button>
+                                <div style="display: flex; gap: 0.5rem; align-items: end;">
+                                    <div style="flex: 2;">
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Article</label>
+                                        <select name="article_id" required style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.85rem;">
+                                            <option value="">Sélectionner un article...</option>
+                                            @foreach($articles as $art)
+                                                @if(!$fournisseur->articles->contains($art->id))
+                                                    <option value="{{ $art->id }}">{{ $art->compte->numero ?? '' }} - {{ $art->designation }}</option>
+                                                @endif
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Prix (FCFA)</label>
+                                        <input type="number" name="prix" required min="0" placeholder="0" 
+                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.85rem; text-align: right;">
+                                    </div>
+                                    <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem; white-space: nowrap;">
+                                        ✓ Enregistrer
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
