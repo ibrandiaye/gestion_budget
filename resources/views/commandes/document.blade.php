@@ -125,9 +125,9 @@
             <div class="info-box" style="text-align: right;">
                 <p>N° compte: <strong>{{ $commande->compte->numero }}</strong></p>
                 <p>Intitulé du compte: <strong>{{ $commande->compte->libelle }}</strong></p>
-                <p>Dotation: <strong>0</strong></p>
-                <p>Crédits engagés: <strong>0</strong></p>
-                <p>Disponible: <strong>0</strong></p>
+                <p>Dotation: <strong>{{ number_format($dotation ?? 0, 0, ',', ' ') }}</strong></p>
+                <p>Crédits engagés: <strong>{{ number_format($creditsEngages ?? 0, 0, ',', ' ') }}</strong></p>
+                <p>Disponible: <strong>{{ number_format($disponible ?? 0, 0, ',', ' ') }}</strong></p>
             </div>
         </div>
 
@@ -166,7 +166,7 @@
         </table>
 
         <p style="margin-top: 20px;">
-            Arrêté le présent Bon à la somme de: <strong>{{ $commande->arrete_somme ?? 'Non spécifié' }} francs CFA</strong>
+            Arrêté le présent Bon à la somme de: <strong>{{ $montantEnLettres ?? 'Zéro' }} francs CFA</strong>
         </p>
 
         <div class="signature-section">

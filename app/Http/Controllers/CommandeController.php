@@ -200,6 +200,21 @@ class CommandeController extends Controller
     public function document(Commande $commande)
     {
         $commande->load(['compte', 'service', 'articles']);
-        return view('commandes.document', compact('commande'));
+        
+        // Get budget line for this compte and service
+        $ligneBudget = LigneBudget::where('budget_id', $commande->budget_id)
+            ->where('compte_id', $commande->compte_id)
+            ->where('service_id', $commande->service_id)
+            ->first();
+        
+        $dotation = $ligneBudget->montant_alloue ?? 0;
+        $creditsEngages = $ligneBudget->montant_engage ?? 0;
+        $disponible = $dotation - $creditsEngages;
+        
+        // Montant total des articles validés
+        $montantTotal = $commande->articles->where('valide', true)->sum('montant_ht');
+        $montantEnLettres = \App\Helpers\NumberToWords::convert($montantTotal);
+        
+        return view('commandes.document', compact('commande', 'dotation', 'creditsEngages', 'disponible', 'montantEnLettres'));
     }
 }
