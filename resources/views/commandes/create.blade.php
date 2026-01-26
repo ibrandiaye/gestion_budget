@@ -107,7 +107,8 @@
             }
 
             try {
-                const response = await fetch(`/api/fournisseurs/compte/${compteId}`);
+                let updateUrl = "{{ route('api.fournisseurs.compte', ':id') }}";
+                const response = await fetch(updateUrl.replace(':id', compteId));
                 const fournisseurs = await response.json();
                 
                 let options = '<option value="">Choisir un fournisseur...</option>';
