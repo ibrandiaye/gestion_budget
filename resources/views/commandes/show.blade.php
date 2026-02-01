@@ -48,6 +48,11 @@
             <div>
                 <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Fournisseur</span>
                 <span style="font-weight: 600;">{{ $commande->fournisseur ?? '-' }}</span>
+                @if($commande->fichier)
+                    <a href="{{ asset('storage/' . $commande->fichier) }}" target="_blank" style="display: inline-block; margin-top: 0.5rem; font-size: 0.85rem; color: var(--primary); text-decoration: underline;">
+                        📎 Voir le Fichier du Marché
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -124,6 +129,7 @@
             @endif
 
             @if($commande->statut === 'soumis')
+                <button type="button" onclick="refuserCommande()" class="btn-secondary" style="background: var(--danger); color: white; border: none;">Refuser la Commande</button>
                 <form action="{{ route('commandes.finaliser', $commande) }}" method="POST">
                     @csrf
                     <button type="submit" class="btn-primary">Finaliser la validation</button>
@@ -135,7 +141,34 @@
                 @if($commande->engagement)
                     <a href="{{ route('engagements.show', $commande->engagement) }}" class="btn-secondary">Voir l'engagement →</a>
                 @endif
+            @else
+                <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-secondary">📄 Imprimer (Brouillon)</a>
             @endif
         </div>
+        
+        @if($commande->statut === 'rejete' && $commande->motif_rejet)
+            <div style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-top: 1.5rem;">
+                <strong>Motif du rejet:</strong>
+                <p>{{ $commande->motif_rejet }}</p>
+            </div>
+        @endif
     </div>
+
+    @if($commande->statut === 'soumis')
+        <!-- Hidden Refus Form -->
+        <form action="{{ route('commandes.refuser', $commande) }}" method="POST" id="refusForm" style="display: none;">
+            @csrf
+            <input type="hidden" name="motif" id="motifRefusInput">
+        </form>
+        
+        <script>
+            function refuserCommande() {
+                const motif = prompt('Veuillez saisir le motif du rejet:');
+                if (motif && motif.trim()) {
+                    document.getElementById('motifRefusInput').value = motif;
+                    document.getElementById('refusForm').submit();
+                }
+            }
+        </script>
+    @endif
 @endsection

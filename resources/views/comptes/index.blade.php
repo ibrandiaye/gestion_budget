@@ -111,7 +111,13 @@
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                         <input type="checkbox" name="is_marche" style="width: 1rem; height: 1rem;">
                         <span style="font-weight: 500;">Compte à marché</span>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">(nécessite un fournisseur)</span>
+                    </label>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="fournisseur_requis" checked style="width: 1rem; height: 1rem;">
+                        <span style="font-weight: 500;">Fournisseur requis</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">(décocher pour salaires, etc.)</span>
                     </label>
                 </div>
 
@@ -188,7 +194,13 @@
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                         <input type="checkbox" id="edit_is_marche" name="is_marche" style="width: 1rem; height: 1rem;">
                         <span style="font-weight: 500;">Compte à marché</span>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">(nécessite un fournisseur)</span>
+                    </label>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="edit_fournisseur_requis" name="fournisseur_requis" style="width: 1rem; height: 1rem;">
+                        <span style="font-weight: 500;">Fournisseur requis</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">(décocher pour salaires, etc.)</span>
                     </label>
                 </div>
 
@@ -243,6 +255,7 @@
             document.getElementById('edit_libelle').value = compte.libelle;
             document.getElementById('edit_type').value = compte.type;
             document.getElementById('edit_is_marche').checked = compte.is_marche || false;
+            document.getElementById('edit_fournisseur_requis').checked = compte.fournisseur_requis !== false;
             document.getElementById('edit_etat').value = compte.etat || 'actif';
             document.getElementById('edit_dotation_initiale').value = compte.dotation_initiale || 0;
             document.getElementById('edit_prix_unitaire_ref').value = compte.prix_unitaire_ref || 0;

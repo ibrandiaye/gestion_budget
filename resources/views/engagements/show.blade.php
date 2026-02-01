@@ -41,6 +41,9 @@
                 <p><strong>Objet:</strong> {{ $engagement->objet }}</p>
                 <p><strong>Nature:</strong> {{ $engagement->nature ?? '-' }}</p>
                 <p><strong>Fournisseur:</strong> {{ $engagement->nom_fournisseur }}</p>
+                @if($engagement->commande->fichier)
+                    <p><strong>Fichier du Marché:</strong> <a href="{{ asset('storage/' . $engagement->commande->fichier) }}" target="_blank" style="color: var(--primary); text-decoration: underline;">📎 Voir le fichier</a></p>
+                @endif
                 <p><strong>Montant:</strong> <span style="font-size: 1.2rem; font-weight: 700;">{{ number_format($engagement->montant, 0, ',', ' ') }} FCFA</span></p>
             </div>
             <div style="padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;">
@@ -75,10 +78,11 @@
 
         <div style="display: flex; justify-content: flex-end; gap: 1rem;">
             @if($engagement->statut === 'cree')
-                <form action="{{ route('engagements.rejeter', $engagement) }}" method="POST" onsubmit="return confirm('Rejeter cet engagement ?')">
+                <form action="{{ route('engagements.rejeter', $engagement) }}" method="POST" id="refusForm" style="display: none;">
                     @csrf
-                    <button type="submit" class="btn-secondary" style="background: var(--danger); color: white; border: none;">Rejeter</button>
+                    <input type="hidden" name="motif" id="motifRefusInput">
                 </form>
+                <button type="button" onclick="refuserEngagement()" class="btn-secondary" style="background: var(--danger); color: white; border: none;">Rejeter</button>
                 <form action="{{ route('engagements.valider', $engagement) }}" method="POST">
                     @csrf
                     <button type="submit" class="btn-primary">Valider et créer le mandat</button>
@@ -88,9 +92,28 @@
             @if($engagement->statut === 'valide')
                 <a href="{{ route('engagements.document', $engagement) }}" target="_blank" class="btn-primary">📄 Imprimer le Bon</a>
                 @if($engagement->mandat)
+                    <a href="{{ route('mandats.document', $engagement->mandat) }}" target="_blank" class="btn-primary" style="background: #e11d48; border-color: #e11d48;">📄 Imprimer Mandat</a>
                     <a href="{{ route('mandats.show', $engagement->mandat) }}" class="btn-secondary">Voir le mandat →</a>
                 @endif
             @endif
         </div>
     </div>
+    </div>
+
+    @if($engagement->statut === 'rejete' && $engagement->motif_rejet)
+        <div style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-top: 1.5rem;">
+            <strong>Motif du rejet:</strong>
+            <p>{{ $engagement->motif_rejet }}</p>
+        </div>
+    @endif
+
+    <script>
+        function refuserEngagement() {
+            const motif = prompt('Veuillez saisir le motif du rejet:');
+            if (motif && motif.trim()) {
+                document.getElementById('motifRefusInput').value = motif;
+                document.getElementById('refusForm').submit();
+            }
+        }
+    </script>
 @endsection

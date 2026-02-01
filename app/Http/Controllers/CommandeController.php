@@ -48,6 +48,7 @@ class CommandeController extends Controller
             'fournisseur' => 'nullable|string|max:191',
             'reference' => 'nullable|string|max:191',
             'caisse' => 'nullable|string|max:100',
+            'fichier' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // Max 5MB
             'articles' => 'required|array|min:1',
             'articles.*.designation' => 'required|string|max:191',
             'articles.*.conditionnement' => 'nullable|string|max:100',
@@ -85,7 +86,12 @@ class CommandeController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($request, $budget, $montantTotal) {
+        $fichierPath = null;
+        if ($request->hasFile('fichier')) {
+            $fichierPath = $request->file('fichier')->store('commandes', 'public');
+        }
+
+        DB::transaction(function () use ($request, $budget, $montantTotal, $fichierPath) {
             $commande = Commande::create([
                 'numero' => Commande::generateNumero(),
                 'date' => $request->date,
@@ -95,6 +101,7 @@ class CommandeController extends Controller
                 'fournisseur' => $request->fournisseur,
                 'reference' => $request->reference,
                 'caisse' => $request->caisse ?? 'Caisse avance',
+                'fichier' => $fichierPath ?? null,
                 'montant_tva' => 0,
                 'montant_ttc' => $montantTotal,
                 'statut' => 'brouillon',
@@ -157,6 +164,26 @@ class CommandeController extends Controller
         return back()->with('success', 'Article rejeté.');
     }
 
+    public function refuser(Request $request, Commande $commande)
+    {
+        if ($commande->statut !== 'soumis') {
+            return back()->withErrors(['statut' => 'Cette commande ne peut pas être refusée.']);
+        }
+
+        $request->validate([
+            'motif' => 'required|string|max:1000',
+        ]);
+
+        $commande->update([
+            'statut' => 'rejete',
+            'valide_par' => Auth::id(),
+            'valide_at' => now(),
+            'motif_rejet' => $request->motif,
+        ]);
+
+        return back()->with('success', 'Commande refusée avec succès.');
+    }
+
     public function finaliserValidation(Commande $commande)
     {
         if ($commande->statut !== 'soumis') {
@@ -211,10 +238,16 @@ class CommandeController extends Controller
         $creditsEngages = $ligneBudget->montant_engage ?? 0;
         $disponible = $dotation - $creditsEngages;
         
-        // Montant total des articles validés
-        $montantTotal = $commande->articles->where('valide', true)->sum('montant_ht');
+        // Montant total et articles
+        if ($commande->statut === 'valide') {
+            $articles = $commande->articles->where('valide', true);
+        } else {
+            $articles = $commande->articles;
+        }
+
+        $montantTotal = $articles->sum('montant_ht');
         $montantEnLettres = \App\Helpers\NumberToWords::convert($montantTotal);
         
-        return view('commandes.document', compact('commande', 'dotation', 'creditsEngages', 'disponible', 'montantEnLettres'));
+        return view('commandes.document', compact('commande', 'dotation', 'creditsEngages', 'disponible', 'montantEnLettres', 'articles'));
     }
 }

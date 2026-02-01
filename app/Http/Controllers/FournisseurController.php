@@ -23,17 +23,25 @@ class FournisseurController extends Controller
         $request->validate([
             'nom' => 'required|string|max:191',
             'telephone' => 'nullable|string|max:50',
+            'telephone2' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:100',
             'adresse' => 'nullable|string|max:191',
             'ninea' => 'nullable|string|max:50',
+            'registre_commerce' => 'nullable|string|max:255',
+            'banque' => 'nullable|string|max:191',
+            'numero_compte' => 'nullable|string|max:50',
         ]);
 
         Fournisseur::create([
             'nom' => $request->nom,
             'telephone' => $request->telephone,
+            'telephone2' => $request->telephone2,
             'email' => $request->email,
             'adresse' => $request->adresse,
             'ninea' => $request->ninea,
+            'registre_commerce' => $request->registre_commerce,
+            'banque' => $request->banque,
+            'numero_compte' => $request->numero_compte,
             'actif' => true,
         ]);
 
@@ -42,22 +50,36 @@ class FournisseurController extends Controller
 
     public function update(Request $request, Fournisseur $fournisseur)
     {
+       // dd($request->actif);
         $request->validate([
             'nom' => 'required|string|max:191',
             'telephone' => 'nullable|string|max:50',
+            'telephone2' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:100',
             'adresse' => 'nullable|string|max:191',
             'ninea' => 'nullable|string|max:50',
-            'actif' => 'nullable|boolean',
+            'registre_commerce' => 'nullable|string|max:255',
+            'banque' => 'nullable|string|max:191',
+            'numero_compte' => 'nullable|string|max:50',
+           // 'actif' => 'nullable|boolean',
         ]);
+        $etat = false;
+        if($request->has('actif')) {
+            $etat = true;
+        }
+        
 
         $fournisseur->update([
             'nom' => $request->nom,
             'telephone' => $request->telephone,
+            'telephone2' => $request->telephone2,
             'email' => $request->email,
             'adresse' => $request->adresse,
             'ninea' => $request->ninea,
-            'actif' => $request->has('actif'),
+            'registre_commerce' => $request->registre_commerce,
+            'banque' => $request->banque,
+            'numero_compte' => $request->numero_compte,
+            'actif' => $etat,
         ]);
 
         return back()->with('success', 'Fournisseur mis à jour.');

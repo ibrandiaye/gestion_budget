@@ -112,7 +112,7 @@ class ExecutionController extends Controller
             $ligne->increment('montant_engage', $totalMontant);
         });
 
-        return back()->with('success', 'Dépense groupée engagée avec succès.');
+        return back()->with('success', 'Dépense groupée engagée avec succès.')->with('execution_id', $execution->id);
     }
 
     public function history()

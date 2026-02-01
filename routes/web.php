@@ -112,6 +112,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/commandes/{commande}/articles/{article}/valider', [CommandeController::class, 'validerArticle'])->name('commandes.valider-article');
     Route::post('/commandes/{commande}/articles/{article}/rejeter', [CommandeController::class, 'rejeterArticle'])->name('commandes.rejeter-article');
     Route::post('/commandes/{commande}/finaliser', [CommandeController::class, 'finaliserValidation'])->name('commandes.finaliser');
+    Route::post('/commandes/{commande}/refuser', [CommandeController::class, 'refuser'])->name('commandes.refuser');
     Route::get('/commandes/{commande}/document', [CommandeController::class, 'document'])->name('commandes.document');
 
     // Engagements
@@ -125,6 +126,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/mandats', [MandatController::class, 'index'])->name('mandats.index');
     Route::get('/mandats/{mandat}', [MandatController::class, 'show'])->name('mandats.show');
     Route::post('/mandats/{mandat}/valider-directeur', [MandatController::class, 'validerDirecteur'])->name('mandats.valider-directeur');
+    Route::post('/mandats/{mandat}/refuser-directeur', [MandatController::class, 'refuserDirecteur'])->name('mandats.refuser-directeur');
     Route::post('/mandats/{mandat}/valider-comptable', [MandatController::class, 'validerComptable'])->name('mandats.valider-comptable');
     Route::post('/mandats/{mandat}/refuser-comptable', [MandatController::class, 'refuserComptable'])->name('mandats.refuser-comptable');
     Route::post('/mandats/{mandat}/requisition', [MandatController::class, 'requisition'])->name('mandats.requisition');

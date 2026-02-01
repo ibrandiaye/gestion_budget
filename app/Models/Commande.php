@@ -24,6 +24,8 @@ class Commande extends Model
         'statut',
         'valide_par',
         'valide_at',
+        'motif_rejet',
+        'fichier',
     ];
 
     protected $casts = [

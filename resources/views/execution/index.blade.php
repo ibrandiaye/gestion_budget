@@ -10,6 +10,15 @@
             dépenses</a>
     </div>
 
+    @if(session('execution_id'))
+        <div style="background: #dcfce7; color: #166534; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #bbf7d0; display: flex; justify-content: space-between; align-items: center;">
+            <span>✅ Dépense enregistrée avec succès.</span>
+            <a href="{{ route('execution.facture', session('execution_id')) }}" target="_blank" class="btn-primary">
+                🖨️ Imprimer le Bon de Dépense
+            </a>
+        </div>
+    @endif
+
     <!-- Grid of Budget Lines -->
     <!-- Grid of Budget Lines Grouped by Account -->
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">

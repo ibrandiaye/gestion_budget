@@ -32,6 +32,7 @@ class CompteController extends Controller
 
         Compte::create(array_merge($request->all(), [
             'is_marche' => $request->has('is_marche'),
+            'fournisseur_requis' => $request->has('fournisseur_requis'),
         ]));
 
         return back()->with('success', 'Compte ajouté avec succès.');
@@ -43,7 +44,7 @@ class CompteController extends Controller
             'numero' => 'required|string|max:50|unique:comptes,numero,' . $compte->id,
             'libelle' => 'required|string|max:255',
             'type' => 'required|in:Fonctionnement,Investissement',
-            'is_marche' => 'nullable|boolean',
+           // 'is_marche' => 'nullable|boolean',
             'dotation_initiale' => 'nullable|numeric|min:0',
             'prix_unitaire_ref' => 'nullable|numeric|min:0',
             'parent_id' => 'nullable|exists:comptes,id',
@@ -51,7 +52,8 @@ class CompteController extends Controller
         ]);
 
         $compte->update(array_merge($request->all(), [
-            'is_marche' => $request->has('is_marche'),
+            'is_marche' => $request->has('is_marche') ? true : false,
+            'fournisseur_requis' => $request->has('fournisseur_requis') ? true : false,
         ]));
 
         return back()->with('success', 'Compte mis à jour avec succès.');

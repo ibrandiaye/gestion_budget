@@ -27,6 +27,7 @@ class Engagement extends Model
         'statut',
         'valide_par',
         'valide_at',
+        'motif_rejet',
     ];
 
     protected $casts = [

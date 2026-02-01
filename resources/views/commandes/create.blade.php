@@ -19,7 +19,7 @@
         <div class="card">
             <h3 style="margin-bottom: 1.5rem;">📋 Nouveau Bon de Commande</h3>
 
-            <form action="{{ route('commandes.store') }}" method="POST" id="commandeForm">
+            <form action="{{ route('commandes.store') }}" method="POST" id="commandeForm" enctype="multipart/form-data">
                 @csrf
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
@@ -29,7 +29,10 @@
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                             <option value="">Sélectionner un compte...</option>
                             @foreach($comptes as $compte)
-                                <option value="{{ $compte->id }}">{{ $compte->numero }} - {{ $compte->libelle }}</option>
+                                <option value="{{ $compte->id }}" 
+                                    data-fournisseur-requis="{{ $compte->fournisseur_requis ? '1' : '0' }}">
+                                    {{ $compte->numero }} - {{ $compte->libelle }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -40,10 +43,12 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div id="fournisseurSection" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div>
-                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Fournisseur *</label>
-                        <select name="fournisseur_id" id="fournisseurSelect" required onchange="loadArticlesFournisseur()"
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">
+                            Fournisseur <span id="fournisseurRequired">*</span>
+                        </label>
+                        <select name="fournisseur_id" id="fournisseurSelect" onchange="loadArticlesFournisseur()"
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                             <option value="">Sélectionner d'abord un compte...</option>
                         </select>
@@ -54,10 +59,35 @@
                         <input type="text" name="reference" placeholder="N° facture/bon"
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                     </div>
-                    <div>
+                      <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Fichier du Marché (PDF/IMG)</label>
+                        <input type="file" name="fichier" accept=".pdf,.jpg,.jpeg,.png"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.5rem; background: white;">
+                    </div>
+                   <!--  <div>
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Caisse</label>
                         <input type="text" name="caisse" value="Caisse d'avance"
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div> -->
+                  
+                </div>
+
+                <!-- Mode sans fournisseur - saisie libre des articles -->
+                <div id="sansFournisseurSection" style="display: none; margin-bottom: 1.5rem; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;">
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        ℹ️ Ce compte ne nécessite pas de fournisseur. Vous pouvez saisir les articles manuellement.
+                    </p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Bénéficiaire (optionnel)</label>
+                            <input type="text" name="fournisseur_libre" id="fournisseurLibre" placeholder="Nom du bénéficiaire"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Référence</label>
+                            <input type="text" name="reference_libre" placeholder="N° référence"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                        </div>
                     </div>
                 </div>
 
@@ -91,24 +121,49 @@
         let articleCount = 0;
         let currentFournisseurArticles = [];
         let selectedCompteId = null;
+        let fournisseurRequis = true;
 
         async function loadFournisseurs() {
-            const compteId = document.getElementById('compteSelect').value;
+            const compteSelect = document.getElementById('compteSelect');
+            const compteOption = compteSelect.options[compteSelect.selectedIndex];
             const fournisseurSelect = document.getElementById('fournisseurSelect');
             
-            selectedCompteId = compteId;
+            selectedCompteId = compteSelect.value;
             currentFournisseurArticles = [];
             document.getElementById('articlesContainer').innerHTML = '';
             articleCount = 0;
             
-            if (!compteId) {
+            if (!selectedCompteId) {
                 fournisseurSelect.innerHTML = '<option value="">Sélectionner d\'abord un compte...</option>';
+                document.getElementById('fournisseurSection').style.display = 'grid';
+                document.getElementById('sansFournisseurSection').style.display = 'none';
                 return;
             }
 
+            // Check if fournisseur is required for this compte
+            fournisseurRequis = compteOption.getAttribute('data-fournisseur-requis') === '1';
+            
+            if (!fournisseurRequis) {
+                // Mode without fournisseur
+                document.getElementById('fournisseurSection').style.display = 'none';
+                document.getElementById('sansFournisseurSection').style.display = 'block';
+                document.getElementById('fournisseurRequired').textContent = '';
+                fournisseurSelect.removeAttribute('required');
+                
+                // Add first article line for manual entry
+                addArticleLine();
+                return;
+            }
+
+            // Mode with fournisseur
+            document.getElementById('fournisseurSection').style.display = 'grid';
+            document.getElementById('sansFournisseurSection').style.display = 'none';
+            document.getElementById('fournisseurRequired').textContent = '*';
+            fournisseurSelect.setAttribute('required', 'required');
+
             try {
                 let updateUrl = "{{ route('api.fournisseurs.compte', ':id') }}";
-                const response = await fetch(updateUrl.replace(':id', compteId));
+                const response = await fetch(updateUrl.replace(':id', selectedCompteId));
                 const fournisseurs = await response.json();
                 
                 let options = '<option value="">Choisir un fournisseur...</option>';
@@ -152,43 +207,77 @@
             div.id = 'article-line-' + index;
             div.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 0.5rem; align-items: end; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;';
 
-            let articleOptions = '<option value="">Choisir article...</option>';
-            currentFournisseurArticles.forEach(a => {
-                articleOptions += `<option value="${a.id}" data-designation="${a.designation}" data-prix="${a.pivot.prix}">${a.designation} (${new Intl.NumberFormat().format(a.pivot.prix)} FCFA)</option>`;
-            });
+            if (fournisseurRequis && currentFournisseurArticles.length > 0) {
+                // Mode avec fournisseur - select articles
+                let articleOptions = '<option value="">Choisir article...</option>';
+                currentFournisseurArticles.forEach(a => {
+                    articleOptions += `<option value="${a.id}" data-designation="${a.designation}" data-prix="${a.pivot.prix}">${a.designation} (${new Intl.NumberFormat().format(a.pivot.prix)} FCFA)</option>`;
+                });
 
-            div.innerHTML = `
-                <div>
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Article *</label>
-                    <select name="articles[${index}][article_id]" onchange="selectArticle(this)" class="article-select"
-                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
-                        ${articleOptions}
-                    </select>
-                    <input type="hidden" name="articles[${index}][designation]" class="designation-hidden">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Conditionnement</label>
-                    <input type="text" name="articles[${index}][conditionnement]" placeholder="ex: 38 unités"
-                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Quantité *</label>
-                    <input type="number" name="articles[${index}][quantite]" required min="1" value="1" onchange="calculateTotal()" class="qte-input"
-                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: center;">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Prix Unitaire *</label>
-                    <input type="number" name="articles[${index}][prix_unitaire]" required min="0" value="0" onchange="calculateTotal()" class="prix-input"
-                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right;">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Montant HT</label>
-                    <input type="text" class="montant-display" readonly value="0 FCFA"
-                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right; background: var(--slate-100);">
-                </div>
-                <button type="button" onclick="removeArticleLine(${index})" 
-                    style="background: #fee2e2; color: #b91c1c; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer;">🗑️</button>
-            `;
+                div.innerHTML = `
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Article *</label>
+                        <select name="articles[${index}][article_id]" onchange="selectArticle(this)" class="article-select"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                            ${articleOptions}
+                        </select>
+                        <input type="hidden" name="articles[${index}][designation]" class="designation-hidden">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Conditionnement</label>
+                        <input type="text" name="articles[${index}][conditionnement]" placeholder="ex: 38 unités"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Quantité *</label>
+                        <input type="number" name="articles[${index}][quantite]" required min="1" value="1" onchange="calculateTotal()" class="qte-input"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: center;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Prix Unitaire *</label>
+                        <input type="number" name="articles[${index}][prix_unitaire]" required min="0" value="0" onchange="calculateTotal()" class="prix-input"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Montant HT</label>
+                        <input type="text" class="montant-display" readonly value="0 FCFA"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right; background: var(--slate-100);">
+                    </div>
+                    <button type="button" onclick="removeArticleLine(${index})" 
+                        style="background: #fee2e2; color: #b91c1c; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer;">🗑️</button>
+                `;
+            } else {
+                // Mode sans fournisseur - saisie libre
+                div.innerHTML = `
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Désignation *</label>
+                        <input type="text" name="articles[${index}][designation]" required placeholder="Ex: Salaire janvier"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Conditionnement</label>
+                        <input type="text" name="articles[${index}][conditionnement]" placeholder="optionnel"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Quantité *</label>
+                        <input type="number" name="articles[${index}][quantite]" required min="1" value="1" onchange="calculateTotal()" class="qte-input"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: center;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Prix Unitaire *</label>
+                        <input type="number" name="articles[${index}][prix_unitaire]" required min="0" value="0" onchange="calculateTotal()" class="prix-input"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Montant HT</label>
+                        <input type="text" class="montant-display" readonly value="0 FCFA"
+                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right; background: var(--slate-100);">
+                    </div>
+                    <button type="button" onclick="removeArticleLine(${index})" 
+                        style="background: #fee2e2; color: #b91c1c; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer;">🗑️</button>
+                `;
+            }
 
             container.appendChild(div);
             calculateTotal();
@@ -231,5 +320,13 @@
             });
             document.getElementById('totalDisplay').textContent = new Intl.NumberFormat().format(total) + ' FCFA';
         }
+
+        // Handle form submit to copy fournisseur_libre to fournisseur when no fournisseur required
+        document.getElementById('commandeForm').addEventListener('submit', function() {
+            if (!fournisseurRequis) {
+                const fournisseurLibre = document.getElementById('fournisseurLibre').value;
+                document.getElementById('fournisseurNom').value = fournisseurLibre;
+            }
+        });
     </script>
 @endsection

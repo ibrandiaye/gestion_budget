@@ -103,7 +103,7 @@
             <div class="header-left">
                 <h3>REPUBLIQUE DU SENEGAL</h3>
                 <p style="font-size: 9pt;">Un peuple - Un but - Une foi</p>
-                <p style="font-size: 9pt;">MINISTERE DE LA SANTE ET DE L'ACTION SOCIALE</p>
+                <p style="font-size: 9pt;">Ministère de la Santé et de l’hygiène publique</p>
                 <p style="font-weight: bold;">HOPITAL ARISTIDE LE DANTEC</p>
             </div>
             <div class="header-center">
@@ -142,7 +142,12 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($commande->articles->where('valide', true) as $article)
+                @if($commande->statut !== 'valide')
+                    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 100pt; color: rgba(0,0,0,0.1); z-index: -1;">
+                        BROUILLON
+                    </div>
+                @endif
+                @foreach($articles as $article)
                 <tr>
                     <td>{{ $article->designation }}</td>
                     <td>{{ $article->conditionnement ?? '-' }}</td>
@@ -161,7 +166,7 @@
             </tr>
             <tr class="total-row">
                 <td>Montant TTC</td>
-                <td style="text-align: right;">{{ number_format($commande->articles->where('valide', true)->sum('montant_ht'), 0, ',', ' ') }}</td>
+                <td style="text-align: right;">{{ number_format($articles->sum('montant_ht'), 0, ',', ' ') }}</td>
             </tr>
         </table>
 

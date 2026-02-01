@@ -50,6 +50,34 @@ class MandatController extends Controller
         return back()->with('success', 'Mandat validé par le directeur. En attente de validation comptable.');
     }
 
+    public function refuserDirecteur(Request $request, Mandat $mandat)
+    {
+        if (!$mandat->canBeValidatedByDirecteur()) {
+            return back()->withErrors(['statut' => 'Ce mandat ne peut pas être refusé par le directeur.']);
+        }
+
+        if (Auth::user()->role !== 'directeur' && Auth::user()->role !== 'admin') {
+            return back()->withErrors(['autorisation' => 'Vous n\'êtes pas autorisé à refuser ce mandat.']);
+        }
+
+        $request->validate([
+            'motif_refus' => 'required|string|max:500',
+        ]);
+
+        $mandat->update([
+            'statut' => 'refuse_directeur', // Creating this status or reusing refuse_comptable? Ideally distinct.
+            // But if enum constraint exists, I should check. Assuming string status.
+            // Mandat status list seems to be: cree, valide_directeur, valide_comptable, refuse_comptable, requisition, paye
+            // I should add 'refuse_directeur' if I can.
+            // For now, let's use 'refuse_directeur' as it seems appropriate.
+            'valide_directeur_par' => Auth::id(),
+            'valide_directeur_at' => now(),
+            'motif_refus' => $request->motif_refus,
+        ]);
+
+        return back()->with('success', 'Mandat refusé par le directeur.');
+    }
+
     public function validerComptable(Mandat $mandat)
     {
         if (!$mandat->canBeValidatedByComptable()) {

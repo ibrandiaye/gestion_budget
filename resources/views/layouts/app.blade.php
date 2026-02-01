@@ -136,6 +136,18 @@
             </header>
 
             <div class="scrollable-content">
+                 @if ($errors->any())
+                    <div style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+                        <div style="font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            ⚠️ Erreur de Validation
+                        </div>
+                        <ul style="margin: 0; padding-left: 1.5rem;">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 @if(session('success'))
                     <div class="alert alert-success">
                         {{ session('success') }}

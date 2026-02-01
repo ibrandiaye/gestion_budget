@@ -62,16 +62,21 @@ class EngagementController extends Controller
         return redirect()->route('mandats.index')->with('success', 'Engagement validé et mandat créé.');
     }
 
-    public function rejeter(Engagement $engagement)
+    public function rejeter(Request $request, Engagement $engagement)
     {
         if ($engagement->statut !== 'cree') {
             return back()->withErrors(['statut' => 'Cet engagement ne peut pas être rejeté.']);
         }
 
+        $request->validate([
+            'motif' => 'required|string|max:1000',
+        ]);
+
         $engagement->update([
             'statut' => 'rejete',
             'valide_par' => Auth::id(),
             'valide_at' => now(),
+            'motif_rejet' => $request->motif,
         ]);
 
         return back()->with('success', 'Engagement rejeté.');

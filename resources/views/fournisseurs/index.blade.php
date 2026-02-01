@@ -16,13 +16,27 @@
                     <div style="border: 1px solid var(--border-color); border-radius: 0.5rem; overflow: hidden;">
                         <div style="background: var(--slate-50); padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <span style="font-weight: 700;">{{ $fournisseur->nom }}</span>
-                                @if($fournisseur->telephone)
-                                    <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 1rem;">📞 {{ $fournisseur->telephone }}</span>
-                                @endif
-                                <span style="font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.5rem; {{ $fournisseur->actif ? 'background: var(--success); color: white;' : 'background: var(--danger); color: white;' }}">
-                                    {{ $fournisseur->actif ? 'Actif' : 'Inactif' }}
-                                </span>
+                                <div style="margin-bottom: 0.25rem;">
+                                    <span style="font-weight: 700;">{{ $fournisseur->nom }}</span>
+                                    <span style="font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.5rem; {{ $fournisseur->actif ? 'background: var(--success); color: white;' : 'background: var(--danger); color: white;' }}">
+                                        {{ $fournisseur->actif ? 'Actif' : 'Inactif' }}
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.2rem;">
+                                    @if($fournisseur->telephone || $fournisseur->telephone2)
+                                        <span>
+                                            📞 {{ $fournisseur->telephone }} 
+                                            @if($fournisseur->telephone && $fournisseur->telephone2) / @endif
+                                            {{ $fournisseur->telephone2 }}
+                                        </span>
+                                    @endif
+                                    @if($fournisseur->banque)
+                                        <span>
+                                            🏦 {{ $fournisseur->banque }} 
+                                            @if($fournisseur->numero_compte) - {{ $fournisseur->numero_compte }} @endif
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                             <div style="display: flex; gap: 0.5rem;">
                                 <button onclick="openEditModal({{ $fournisseur->toJson() }})" 
@@ -113,10 +127,17 @@
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                 </div>
 
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Téléphone</label>
-                    <input type="text" name="telephone" placeholder="+221 77 XXX XX XX"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Téléphone 1</label>
+                        <input type="text" name="telephone" placeholder="+221 77..."
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Téléphone 2</label>
+                        <input type="text" name="telephone2" placeholder="+221 77..."
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
                 </div>
 
                 <div style="margin-bottom: 1rem;">
@@ -137,6 +158,25 @@
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                 </div>
 
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Registre de Commerce</label>
+                    <input type="text" name="registre_commerce" placeholder="RC..."
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Banque</label>
+                        <input type="text" name="banque" placeholder="Nom de la banque"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Numéro de compte</label>
+                        <input type="text" name="numero_compte" placeholder="RIB / Numéro"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                </div>
+
                 <button type="submit" class="btn-primary" style="width: 100%;">Ajouter le Fournisseur</button>
             </form>
         </div>
@@ -155,10 +195,17 @@
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                 </div>
 
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Téléphone</label>
-                    <input type="text" name="telephone" id="edit_telephone"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Téléphone 1</label>
+                        <input type="text" name="telephone" id="edit_telephone"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Téléphone 2</label>
+                        <input type="text" name="telephone2" id="edit_telephone2"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
                 </div>
 
                 <div style="margin-bottom: 1rem;">
@@ -177,6 +224,25 @@
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">NINEA</label>
                     <input type="text" name="ninea" id="edit_ninea"
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Registre de Commerce</label>
+                    <input type="text" name="registre_commerce" id="edit_registre_commerce"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Banque</label>
+                        <input type="text" name="banque" id="edit_banque"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Numéro de compte</label>
+                        <input type="text" name="numero_compte" id="edit_numero_compte"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
                 </div>
 
                 <div style="margin-bottom: 1.5rem;">
@@ -198,9 +264,13 @@
         function openEditModal(fournisseur) {
             document.getElementById('edit_nom').value = fournisseur.nom;
             document.getElementById('edit_telephone').value = fournisseur.telephone || '';
+            document.getElementById('edit_telephone2').value = fournisseur.telephone2 || '';
             document.getElementById('edit_email').value = fournisseur.email || '';
             document.getElementById('edit_adresse').value = fournisseur.adresse || '';
             document.getElementById('edit_ninea').value = fournisseur.ninea || '';
+            document.getElementById('edit_registre_commerce').value = fournisseur.registre_commerce || '';
+            document.getElementById('edit_banque').value = fournisseur.banque || '';
+            document.getElementById('edit_numero_compte').value = fournisseur.numero_compte || '';
             document.getElementById('edit_actif').checked = fournisseur.actif;
 
             let url = "{{ route('fournisseurs.update', ':id') }}";

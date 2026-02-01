@@ -12,9 +12,13 @@ class Fournisseur extends Model
     protected $fillable = [
         'nom',
         'telephone',
+        'telephone2',
         'email',
         'adresse',
         'ninea',
+        'registre_commerce',
+        'banque',
+        'numero_compte',
         'actif',
     ];
 

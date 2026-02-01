@@ -9,10 +9,11 @@ class Compte extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['numero', 'libelle', 'type', 'is_marche', 'dotation_initiale', 'prix_unitaire_ref', 'parent_id', 'etat'];
+    protected $fillable = ['numero', 'libelle', 'type', 'is_marche', 'fournisseur_requis', 'dotation_initiale', 'prix_unitaire_ref', 'parent_id', 'etat'];
 
     protected $casts = [
         'is_marche' => 'boolean',
+        'fournisseur_requis' => 'boolean',
     ];
 
     public function parent()
