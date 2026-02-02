@@ -45,6 +45,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
 
     // Comptes (Admin Only)
+    Route::get('/comptes/template/download', [CompteController::class, 'downloadTemplate'])->name('comptes.template');
+    Route::post('/comptes/import', [CompteController::class, 'import'])->name('comptes.import');
     Route::get('/comptes', [CompteController::class, 'index'])->name('comptes.index');
     Route::post('/comptes', [CompteController::class, 'store'])->name('comptes.store');
     Route::put('/comptes/{compte}', [CompteController::class, 'update'])->name('comptes.update');

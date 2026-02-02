@@ -80,7 +80,9 @@
             <div style="text-align: center;">
                 <strong>REPUBLIQUE DU SENEGAL</strong><br>
                 <span style="font-size: 8pt;">Un peuple - Un but - Une foi</span><br>
-                <span style="font-size: 8pt;">HOPITAL ARISTIDE LE DANTEC</span>
+                <img src="{{ asset('entete/drapeau.png') }}" alt="Logo" style="width: 50px; height: auto;"><br>
+                <span style="font-size: 8pt;">HOPITAL ARISTIDE LE DANTEC</span><br>
+                <img src="{{ asset('entete/hald.jpg') }}" alt="Logo" style="width: 200px; height: auto;">
             </div>
             <div style="text-align: center;">
                 <h2 style="margin: 0;">BON D'ENGAGEMENT</h2>

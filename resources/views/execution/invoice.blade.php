@@ -50,6 +50,7 @@
         <div class="header">
             <div class="hospital-brand">
                 <h1>Hôpital Aristide Le Dantec</h1>
+                <img src="{{ asset('entete/hald.jpg') }}" alt="Logo" style="width: 200px; height: auto;"><br>
                 <p>Direction Administrative et Financière</p>
                 <p>Gestion Budgétaire Automatisée</p>
             </div>

@@ -103,8 +103,10 @@
             <div class="header-left">
                 <h3>REPUBLIQUE DU SENEGAL</h3>
                 <p style="font-size: 9pt;">Un peuple - Un but - Une foi</p>
+                <img src="{{ asset('entete/drapeau.png') }}" alt="Logo" style="width: 50px; height: auto;">
                 <p style="font-size: 9pt;">Ministère de la Santé et de l’hygiène publique</p>
                 <p style="font-weight: bold;">HOPITAL ARISTIDE LE DANTEC</p>
+                <img src="{{ asset('entete/hald.jpg') }}" alt="Logo" style="width: 200px; height: auto;">
             </div>
             <div class="header-center">
                 <h1>BON DE</h1>

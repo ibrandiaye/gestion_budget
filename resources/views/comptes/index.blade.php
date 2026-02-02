@@ -16,6 +16,42 @@
             </ul>
         </div>
     @endif
+
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: center; justify-content: space-between;">
+        <h2 style="margin: 0;">Plan Comptable</h2>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{{ route('comptes.template') }}" class="btn-secondary" style="text-decoration: none;">
+                📥 Télécharger Modèle CSV
+            </a>
+            <button onclick="document.getElementById('importForm').style.display='flex'" class="btn-primary">
+                📤 Importer CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importForm" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%; max-width: 500px; margin: 2rem;">
+            <h3 style="margin-bottom: 1.5rem;">Importer des Comptes</h3>
+            <form action="{{ route('comptes.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Fichier CSV</label>
+                    <input type="file" name="file" accept=".csv,.txt" required
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
+                        Format accepté: CSV. Téléchargez le modèle pour voir le format requis.
+                    </p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" onclick="document.getElementById('importForm').style.display='none'" 
+                        class="btn-secondary" style="flex: 1; text-align: center;">Annuler</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;">Importer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
         <!-- List of Comptes -->
         <div class="card">
