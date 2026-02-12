@@ -52,6 +52,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/comptes/{compte}', [CompteController::class, 'update'])->name('comptes.update');
     Route::delete('/comptes/{compte}', [CompteController::class, 'destroy'])->name('comptes.destroy');
 
+    // Compte Parents (Admin Only)
+    Route::resource('compte-parents', \App\Http\Controllers\CompteParentController::class)->except(['create', 'edit', 'show']);
+
     // Articles (Admin Only)
     Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
     Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
@@ -104,6 +107,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/export/besoins/compte', [ReportingController::class, 'exportBesoinsByCompte'])->name('export.besoins.compte');
     Route::get('/export/budget/service', [ReportingController::class, 'exportBudgetByService'])->name('export.budget.service');
     Route::get('/export/budget/compte', [ReportingController::class, 'exportBudgetByCompte'])->name('export.budget.compte');
+    Route::get('/export/mshp', [ReportingController::class, 'exportMSHP'])->name('export.mshp');
+    Route::get('/export/mfb', [ReportingController::class, 'exportMFB'])->name('export.mfb');
 
     // Commandes
     Route::get('/commandes', [CommandeController::class, 'index'])->name('commandes.index');

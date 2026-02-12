@@ -53,20 +53,38 @@
 
     <!-- Exports Section -->
     <div class="card" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1rem;">Exports CSV</h3>
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <a href="{{ route('export.besoins.service') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
-                📥 Besoins par Service
-            </a>
-            <a href="{{ route('export.besoins.compte') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
-                📥 Besoins par Compte
-            </a>
-            <a href="{{ route('export.budget.service') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
-                📥 Budget par Service
-            </a>
-            <a href="{{ route('export.budget.compte') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
-                📥 Budget par Compte
-            </a>
+        <h3 style="margin-bottom: 1rem;">Exports</h3>
+        
+        <!-- Excel Exports -->
+        <div style="margin-bottom: 1.5rem;">
+            <h4 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem; font-weight: 600;">📊 Rapports Excel</h4>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="{{ route('export.mshp') }}" class="btn-primary" style="text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa fa-file-excel"></i> Export MSHP
+                </a>
+                <a href="{{ route('export.mfb') }}" class="btn-primary" style="text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa fa-file-excel"></i> Export MFB (Agrégé)
+                </a>
+            </div>
+        </div>
+        
+        <!-- CSV Exports -->
+        <div>
+            <h4 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem; font-weight: 600;">📥 Exports CSV</h4>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="{{ route('export.besoins.service') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
+                    📥 Besoins par Service
+                </a>
+                <a href="{{ route('export.besoins.compte') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
+                    📥 Besoins par Compte
+                </a>
+                <a href="{{ route('export.budget.service') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
+                    📥 Budget par Service
+                </a>
+                <a href="{{ route('export.budget.compte') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
+                    📥 Budget par Compte
+                </a>
+            </div>
         </div>
     </div>
 

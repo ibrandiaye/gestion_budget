@@ -10,7 +10,15 @@
                 </h3>
                 <p style="color: var(--text-muted);">Cumul de tous les services pour l'exercice actif</p>
             </div>
-            <a href="{{ route('reporting.global') }}" class="btn-secondary">Vue Globale</a>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <a href="{{ route('export.mshp') }}" class="btn-primary" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa fa-file-excel"></i> Export MSHP
+                </a>
+                <a href="{{ route('export.mfb') }}" class="btn-primary" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa fa-file-excel"></i> Export MFB
+                </a>
+                <a href="{{ route('reporting.global') }}" class="btn-secondary">Vue Globale</a>
+            </div>
         </div>
 
         <table style="width: 100%; border-collapse: collapse;">

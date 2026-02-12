@@ -32,7 +32,7 @@ class CommandeController extends Controller
     {
         $comptes = Compte::with(['articles' => fn($q) => $q->where('actif', true)])
             ->where('etat', 'actif')
-            ->whereNotNull('parent_id')
+            ->whereNotNull('compte_parent_id')
             ->get();
         
         $budget = Budget::whereIn('statut', ['brouillon', 'actif'])->latest('annee')->first();
@@ -215,7 +215,7 @@ class CommandeController extends Controller
             'commande_id' => $commande->id,
             'date' => now()->toDateString(),
             'objet' => $commande->articles->first()->designation ?? 'Commande ' . $commande->numero,
-            'nature' => $commande->compte->type ?? 'Fonctionnement',
+            'nature' => $commande->compte->compteParent->type ?? 'Fonctionnement',
             'montant' => $montantValide,
             'nom_fournisseur' => $commande->fournisseur ?? 'Non spécifié',
             'statut' => 'cree',

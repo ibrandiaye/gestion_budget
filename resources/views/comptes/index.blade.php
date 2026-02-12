@@ -53,67 +53,52 @@
     </div>
 
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
-        <!-- List of Comptes -->
+        <!-- List of Compte Parents and their Comptes -->
         <div class="card">
             <h3 style="margin-bottom: 1.5rem;">Comptes Budgétaires</h3>
-            <ul style="list-style: none; padding: 0;">
-
-                @foreach($comptes as $compte)
-                    <li style="margin-bottom: 0.5rem; border-bottom: 1px solid var(--slate-100); padding-bottom: 0.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span
-                                    style="font-weight: 700; color: var(--primary-700); margin-right: 0.5rem;">{{ $compte->numero }}</span>
-                                <span style="font-weight: 600;">{{ $compte->libelle }}</span>
-                                <span
-                                    style="font-size: 0.75rem; background: var(--slate-100); padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.5rem;">{{ $compte->type }}</span>
-                                @if($compte->is_marche)
-                                    <span style="font-size: 0.7rem; background: var(--warning); color: white; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.5rem;">À MARCHÉ</span>
-                                @endif
-                                <span
-                                    style="font-size: 0.75rem; margin-left: 0.5rem; color: {{ $compte->etat === 'actif' ? 'var(--success)' : 'var(--danger)' }};">
-                                    {{ ucfirst($compte->etat) }}
-                                </span>
-                                @if($compte->dotation_initiale > 0)
-                                    <span style="font-size: 0.75rem; margin-left: 0.5rem; color: var(--primary); font-weight: 600;">
-                                        Dotation: {{ number_format($compte->dotation_initiale, 0, ',', ' ') }} FCFA
-                                    </span>
-                                @endif
-                            </div>
-                            <div>
-                                <button onclick="openCompteModal({{ $compte }})"
-                                    style="border: none; background: none; color: var(--primary); cursor: pointer; font-size: 0.9rem; margin-right: 0.5rem;">✏️</button>
-                            </div>
-                        </div>
-
-                        <!-- Children -->
-                        @if($compte->children->count() > 0)
-                            <ul
-                                style="list-style: none; padding-left: 2rem; margin-top: 0.5rem; border-left: 2px solid var(--slate-100);">
-                                @foreach($compte->children as $child)
-                                    <li style="margin-bottom: 0.25rem; display: flex; justify-content: space-between;">
-                                        <div>
-                                            <span
-                                                style="font-weight: 600; color: var(--slate-600); margin-right: 0.5rem;">{{ $child->numero }}</span>
-                                            <span>{{ $child->libelle }}</span>
-                                        </div>
-                                        <div>
-                                            <button onclick="openCompteModal({{ $child }})"
-                                                style="border: none; background: none; color: var(--primary); cursor: pointer; font-size: 0.8rem; margin-right: 0.5rem;">✏️</button>
-                                            <form action="{{ route('comptes.destroy', $child) }}" method="POST" style="display: inline;"
-                                                onsubmit="return confirm('Confirmer suppression ?')">
-                                                @csrf @method('DELETE')
-                                                <button
-                                                    style="border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem;">🗑️</button>
-                                            </form>
-                                        </div>
-                                    </li>
-                                @endforeach
-                            </ul>
-                        @endif
-                    </li>
-                @endforeach
-            </ul>
+            
+            @foreach($parents as $parent)
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="color: var(--primary-700); border-bottom: 2px solid var(--primary-100); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                        {{ $parent->numero }} - {{ $parent->libelle }}
+                    </h4>
+                    
+                    <ul style="list-style: none; padding: 0;">
+                        @foreach($parent->comptes as $compte)
+                            <li style="margin-bottom: 0.5rem; border-bottom: 1px solid var(--slate-100); padding-bottom: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <span style="font-weight: 700; color: var(--slate-800); margin-right: 0.5rem;">{{ $compte->numero }}</span>
+                                        <span style="font-weight: 600;">{{ $compte->libelle }}</span>
+                                        
+                                        @if($compte->is_marche)
+                                            <span style="font-size: 0.7rem; background: var(--warning); color: white; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.5rem;">À MARCHÉ</span>
+                                        @endif
+                                        <span style="font-size: 0.75rem; margin-left: 0.5rem; color: {{ $compte->etat === 'actif' ? 'var(--success)' : 'var(--danger)' }};">
+                                            {{ ucfirst($compte->etat) }}
+                                        </span>
+                                        @if($compte->dotation_initiale > 0)
+                                            <span style="font-size: 0.75rem; margin-left: 0.5rem; color: var(--primary); font-weight: 600;">
+                                                Dotation: {{ number_format($compte->dotation_initiale, 0, ',', ' ') }} FCFA
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <button onclick="openCompteModal({{ $compte }})"
+                                            style="border: none; background: none; color: var(--primary); cursor: pointer; font-size: 0.9rem; margin-right: 0.5rem;">✏️</button>
+                                         <form action="{{ route('comptes.destroy', $compte) }}" method="POST" style="display: inline;"
+                                            onsubmit="return confirm('Confirmer suppression ?')">
+                                            @csrf @method('DELETE')
+                                            <button
+                                                style="border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem;">🗑️</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endforeach
         </div>
 
         <!-- Create Compte Form -->
@@ -134,12 +119,14 @@
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                 </div>
 
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Type</label>
-                    <select name="type" required
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Compte Parent</label>
+                    <select name="compte_parent_id" required
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                        <option value="Fonctionnement">Fonctionnement</option>
-                        <option value="Investissement">Investissement</option>
+                        <option value="">Sélectionner un parent...</option>
+                        @foreach($allParents as $p)
+                            <option value="{{ $p->id }}">{{ $p->numero }} - {{ $p->libelle }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -179,17 +166,6 @@
                     </select>
                 </div>
 
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Compte Parent</label>
-                    <select name="parent_id"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                        <option value="">Aucun (Racine)</option>
-                        @foreach($allComptes as $c)
-                            <option value="{{ $c->id }}">{{ $c->numero }} - {{ $c->libelle }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
                 <button type="submit" class="btn-primary" style="width: 100%;">Ajouter Compte</button>
             </form>
         </div>
@@ -217,12 +193,14 @@
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                 </div>
 
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Type</label>
-                    <select id="edit_type" name="type" required
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Compte Parent</label>
+                     <select id="edit_compte_parent_id" name="compte_parent_id" required
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                        <option value="Fonctionnement">Fonctionnement</option>
-                        <option value="Investissement">Investissement</option>
+                        <option value="">Sélectionner un parent...</option>
+                        @foreach($allParents as $p)
+                            <option value="{{ $p->id }}">{{ $p->numero }} - {{ $p->libelle }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -262,17 +240,6 @@
                     </select>
                 </div>
 
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Compte Parent</label>
-                    <select id="edit_parent_id" name="parent_id"
-                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                        <option value="">Aucun (Racine)</option>
-                        @foreach($allComptes as $c)
-                            <option value="{{ $c->id }}">{{ $c->numero }} - {{ $c->libelle }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
                 <div style="display: flex; gap: 1rem;">
                     <button type="button" onclick="closeCompteModal()" class="btn-secondary"
                         style="flex: 1; text-align: center;">Annuler</button>
@@ -289,13 +256,13 @@
 
             document.getElementById('edit_numero').value = compte.numero;
             document.getElementById('edit_libelle').value = compte.libelle;
-            document.getElementById('edit_type').value = compte.type;
+            // document.getElementById('edit_type').value = compte.type; // Removed
             document.getElementById('edit_is_marche').checked = compte.is_marche || false;
             document.getElementById('edit_fournisseur_requis').checked = compte.fournisseur_requis !== false;
             document.getElementById('edit_etat').value = compte.etat || 'actif';
             document.getElementById('edit_dotation_initiale').value = compte.dotation_initiale || 0;
             document.getElementById('edit_prix_unitaire_ref').value = compte.prix_unitaire_ref || 0;
-            document.getElementById('edit_parent_id').value = compte.parent_id || '';
+            document.getElementById('edit_compte_parent_id').value = compte.compte_parent_id || '';
 
             let updateUrl = "{{ route('comptes.update', ':id') }}";
             form.action = updateUrl.replace(':id', compte.id);

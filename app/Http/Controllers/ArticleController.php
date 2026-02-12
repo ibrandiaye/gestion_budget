@@ -11,7 +11,8 @@ class ArticleController extends Controller
     public function index()
     {
         // Get all comptes with their articles
-        $comptes = Compte::with('articles')->whereNull('parent_id')->orWhereHas('articles')->get();
+        // Get all comptes with their articles
+        $comptes = Compte::with('articles')->get();
         $allComptes = Compte::all();
 
         return view('articles.index', compact('comptes', 'allComptes'));

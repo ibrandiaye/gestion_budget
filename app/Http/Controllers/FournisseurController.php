@@ -13,7 +13,7 @@ class FournisseurController extends Controller
     {
         $fournisseurs = Fournisseur::with('articles')->orderBy('nom')->get();
         $articles = Article::where('actif', true)->with('compte')->get();
-        $comptes = Compte::whereNotNull('parent_id')->where('etat', 'actif')->get();
+        $comptes = Compte::whereNotNull('compte_parent_id')->where('etat', 'actif')->get();
 
         return view('fournisseurs.index', compact('fournisseurs', 'articles', 'comptes'));
     }

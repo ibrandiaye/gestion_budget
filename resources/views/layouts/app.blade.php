@@ -76,7 +76,10 @@
                 <a href="{{ route('services.index') }}" class="nav-item {{ request()->routeIs('services.*') ? 'active' : '' }}">
                     <span class="icon">🏢</span> Services
                 </a>
-                  <a href="{{ route('comptes.index') }}" class="nav-item {{ request()->routeIs('comptes.*') ? 'active' : '' }}">
+                  <a href="{{ route('compte-parents.index') }}" class="nav-item {{ request()->routeIs('compte-parents.*') ? 'active' : '' }}">
+                    <span class="icon">📂</span> Catégories (Parents)
+                </a>
+                <a href="{{ route('comptes.index') }}" class="nav-item {{ request()->routeIs('comptes.*') ? 'active' : '' }}">
                     <span class="icon">📑</span> Comptes
                 </a>
                 <a href="{{ route('articles.index') }}" class="nav-item {{ request()->routeIs('articles.*') ? 'active' : '' }}">

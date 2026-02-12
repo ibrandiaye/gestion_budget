@@ -9,21 +9,16 @@ class Compte extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['numero', 'libelle', 'type', 'is_marche', 'fournisseur_requis', 'dotation_initiale', 'prix_unitaire_ref', 'parent_id', 'etat'];
+    protected $fillable = ['numero', 'libelle', 'compte_parent_id', 'is_marche', 'fournisseur_requis', 'dotation_initiale', 'prix_unitaire_ref', 'etat'];
 
     protected $casts = [
         'is_marche' => 'boolean',
         'fournisseur_requis' => 'boolean',
     ];
 
-    public function parent()
+    public function compteParent()
     {
-        return $this->belongsTo(Compte::class, 'parent_id');
-    }
-
-    public function children()
-    {
-        return $this->hasMany(Compte::class, 'parent_id');
+        return $this->belongsTo(CompteParent::class);
     }
 
     public function lignesBudget()

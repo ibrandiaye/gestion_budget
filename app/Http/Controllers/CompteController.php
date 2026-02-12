@@ -3,18 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Compte;
+use App\Models\CompteParent;
 use Illuminate\Http\Request;
 
 class CompteController extends Controller
 {
     public function index()
     {
-        // Get parent accounts with children for display
-        $comptes = Compte::with('children')->whereNull('parent_id')->get();
-        // Get all accounts for parent selection dropdown
-        $allComptes = Compte::all();
+        // Get parents with their accounts
+        $parents = CompteParent::with('comptes')->orderBy('numero')->get();
+        // Get all parents for selection dropdown
+        $allParents = CompteParent::all();
 
-        return view('comptes.index', compact('comptes', 'allComptes'));
+        return view('comptes.index', compact('parents', 'allParents'));
     }
 
     public function store(Request $request)
@@ -22,15 +23,16 @@ class CompteController extends Controller
         $request->validate([
             'numero' => 'required|string|max:50|unique:comptes',
             'libelle' => 'required|string|max:255',
-            'type' => 'required|in:Fonctionnement,Investissement',
+            'compte_parent_id' => 'required|exists:compte_parents,id',
             'is_marche' => 'nullable|boolean',
             'dotation_initiale' => 'nullable|numeric|min:0',
             'prix_unitaire_ref' => 'nullable|numeric|min:0',
-            'parent_id' => 'nullable|exists:comptes,id',
             'etat' => 'required|in:actif,inactif',
         ]);
 
-        Compte::create(array_merge($request->all(), [
+        Compte::create(array_merge($request->only([
+            'numero', 'libelle', 'compte_parent_id', 'dotation_initiale', 'prix_unitaire_ref', 'etat'
+        ]), [
             'is_marche' => $request->has('is_marche'),
             'fournisseur_requis' => $request->has('fournisseur_requis'),
         ]));
@@ -43,15 +45,15 @@ class CompteController extends Controller
         $request->validate([
             'numero' => 'required|string|max:50|unique:comptes,numero,' . $compte->id,
             'libelle' => 'required|string|max:255',
-            'type' => 'required|in:Fonctionnement,Investissement',
-           // 'is_marche' => 'nullable|boolean',
+            'compte_parent_id' => 'required|exists:compte_parents,id',
             'dotation_initiale' => 'nullable|numeric|min:0',
             'prix_unitaire_ref' => 'nullable|numeric|min:0',
-            'parent_id' => 'nullable|exists:comptes,id',
             'etat' => 'required|in:actif,inactif',
         ]);
 
-        $compte->update(array_merge($request->all(), [
+        $compte->update(array_merge($request->only([
+            'numero', 'libelle', 'compte_parent_id', 'dotation_initiale', 'prix_unitaire_ref', 'etat'
+        ]), [
             'is_marche' => $request->has('is_marche') ? true : false,
             'fournisseur_requis' => $request->has('fournisseur_requis') ? true : false,
         ]));
@@ -70,24 +72,22 @@ class CompteController extends Controller
         $headers = [
             'numero',
             'libelle', 
-            'type',
+            'compte_parent_numero', // Was type/parent
             'is_marche',
             'fournisseur_requis',
             'dotation_initiale',
             'prix_unitaire_ref',
-            'parent_numero',
             'etat'
         ];
 
         $example = [
             '6011',
             'Papier ramette A4',
-            'Fonctionnement',
+            '10', // Parent numero
             '0',
             '1',
             '0',
             '0',
-            '',
             'actif'
         ];
 
@@ -138,67 +138,45 @@ class CompteController extends Controller
 
                 while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
                     $lineNumber++;
-                    //dd($row);
-                    if (count($row) < 9) {
-                        $errors[] = "Ligne $lineNumber: Nombre de colonnes insuffisant (" . count($row) . " colonnes trouvées)";
+                    // Expected columns: numero, libelle, parent_numero, is_marche, fournisseur_requis, dotation, prix, etat
+                    // Adjust logic based on new headers structure
+                    
+                    if (count($row) < 8) {
+                        $errors[] = "Ligne $lineNumber: Nombre de colonnes insuffisant";
                         continue;
                     } 
                    
-
                     $data = [
                         'numero' => trim($row[0]),
                         'libelle' => trim($row[1]),
-                        'type' => trim($row[2]),
+                        'parent_numero' => trim($row[2]),
                         'is_marche' => $row[3] == '1',
                         'fournisseur_requis' => $row[4] == '1',
                         'dotation_initiale' => floatval($row[5]),
                         'prix_unitaire_ref' => floatval($row[6]),
-                        'parent_numero' => trim($row[7]),
-                        'etat' => trim($row[8]),
+                        'etat' => trim($row[7]),
                     ];
 
-                    // Validation
-                    if (empty($data['numero']) || empty($data['libelle']) || empty($data['type']) || empty($data['etat'])) {
-                        $errors[] = "Ligne $lineNumber: Champs requis manquants";
+                    // Validation & Parent Lookup
+                    $parent = CompteParent::where('numero', $data['parent_numero'])->first();
+                    if (!$parent) {
+                        $errors[] = "Ligne $lineNumber: Parent avec numéro {$data['parent_numero']} introuvable";
                         continue;
                     }
 
-                    if (!in_array($data['type'], ['Fonctionnement', 'Investissement'])) {
-                        $errors[] = "Ligne $lineNumber: Type invalide (doit être Fonctionnement ou Investissement)";
-                        continue;
-                    }
-
-                    if (!in_array($data['etat'], ['actif', 'inactif'])) {
-                        $errors[] = "Ligne $lineNumber: État invalide (doit être actif ou inactif)";
-                        continue;
-                    }
-
-                    // Check if numero already exists
                     if (Compte::where('numero', $data['numero'])->exists()) {
-                        $errors[] = "Ligne $lineNumber: Le numéro {$data['numero']} existe déjà";
-                        continue;
-                    }
-
-                    // Find parent if specified
-                    $parent_id = null;
-                    if (!empty($data['parent_numero'])) {
-                        $parent = Compte::where('numero', $data['parent_numero'])->first();
-                        if (!$parent) {
-                            $errors[] = "Ligne $lineNumber: Compte parent {$data['parent_numero']} introuvable";
-                            continue;
-                        }
-                        $parent_id = $parent->id;
+                         $errors[] = "Ligne $lineNumber: Le numéro {$data['numero']} existe déjà";
+                         continue;
                     }
 
                     Compte::create([
                         'numero' => $data['numero'],
                         'libelle' => $data['libelle'],
-                        'type' => $data['type'],
+                        'compte_parent_id' => $parent->id,
                         'is_marche' => $data['is_marche'],
                         'fournisseur_requis' => $data['fournisseur_requis'],
                         'dotation_initiale' => $data['dotation_initiale'],
                         'prix_unitaire_ref' => $data['prix_unitaire_ref'],
-                        'parent_id' => $parent_id,
                         'etat' => $data['etat'],
                     ]);
 

@@ -38,7 +38,7 @@ class BesoinController extends Controller
                 $q->where('actif', true);
             }])
            // ->where('type', 'Fonctionnement')
-            ->whereNotNull('parent_id') // Only leaf accounts usually
+            ->whereNotNull('compte_parent_id') // Only leaf accounts usually
             ->where('etat', 'actif')
             ->get();
 
