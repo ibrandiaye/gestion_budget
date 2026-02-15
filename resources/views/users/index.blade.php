@@ -11,6 +11,8 @@
                 <thead>
                     <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
                         <th style="padding: 0.75rem;">Nom</th>
+                        <th style="padding: 0.75rem;">Matricule</th>
+                        <th style="padding: 0.75rem;">Fonction</th>
                         <th style="padding: 0.75rem;">Role</th>
                         <th style="padding: 0.75rem;">Service</th>
                         <th style="padding: 0.75rem;">Actions</th>
@@ -22,6 +24,12 @@
                             <td style="padding: 0.75rem;">
                                 <div style="font-weight: 500;">{{ $user->name }}</div>
                                 <div style="font-size: 0.8rem; color: var(--text-muted);">{{ $user->email }}</div>
+                            </td>
+                            <td style="padding: 0.75rem; font-family: monospace;">
+                                {{ $user->matricule ?? '-' }}
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                {{ $user->fonction ?? '-' }}
                             </td>
                             <td style="padding: 0.75rem;">
                                 <span
@@ -87,6 +95,18 @@
                     </select>
                 </div>
 
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Matricule</label>
+                    <input type="text" name="matricule"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Fonction</label>
+                    <input type="text" name="fonction"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Service (Si applicable)</label>
                     <select name="service_id"
@@ -136,6 +156,18 @@
                     </select>
                 </div>
 
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Matricule</label>
+                    <input type="text" id="edit_matricule" name="matricule"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Fonction</label>
+                    <input type="text" id="edit_fonction" name="fonction"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Service</label>
                     <select id="edit_service_id" name="service_id"
@@ -165,6 +197,8 @@
             document.getElementById('edit_email').value = user.email;
             document.getElementById('edit_role').value = user.role;
             document.getElementById('edit_service_id').value = user.service_id || '';
+            document.getElementById('edit_matricule').value = user.matricule || '';
+            document.getElementById('edit_fonction').value = user.fonction || '';
 
             // Set Form Action (We need to add a route for update if it doesn't exist, 
             // assuming standard resource route: /users/{id})

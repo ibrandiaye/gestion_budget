@@ -172,66 +172,35 @@ class ReportingController extends Controller
 
         return $this->exportToCsv('budget_par_compte.csv', $headers, $data);
     }
+    
+    public function viewMSHP()
+    {
+        $data = $this->prepareReportData(false);
+        return view('reporting.mshp', compact('data'));
+    }
+    
+    public function viewMFB()
+    {
+        $data = $this->prepareReportData(true);
+        return view('reporting.mfb', compact('data'));
+    }
 
     public function exportMSHP()
     {
-        $budget = \App\Models\Budget::where('statut', 'actif')->first();
-        
-        // Get all CompteParents ordered by type (Fonctionnement first)
-        $parents = CompteParent::orderByRaw("CASE WHEN type = 'Fonctionnement' THEN 1 ELSE 2 END")
-            ->orderBy('numero')
-            ->get();
-        
-        $data = [];
-        
-        foreach ($parents as $parent) {
-            // Get all comptes for this parent with their budget data
-            $comptes = Compte::where('compte_parent_id', $parent->id)
-                ->orderBy('numero')
-                ->get();
-            
-            $parentData = [
-                'parent' => $parent,
-                'comptes' => [],
-                'total_alloue' => 0,
-                'total_engage' => 0,
-            ];
-            
-            foreach ($comptes as $compte) {
-                // Sum across all services for this compte
-                $stats = LigneBudget::where('compte_id', $compte->id)
-                    ->when($budget, fn($q) => $q->where('budget_id', $budget->id))
-                    ->selectRaw('SUM(montant_alloue) as total_alloue, SUM(montant_engage) as total_engage')
-                    ->first();
-                
-                $alloue = $stats->total_alloue ?? 0;
-                $engage = $stats->total_engage ?? 0;
-                $taux = $alloue > 0 ? ($engage / $alloue) * 100 : 0;
-                $restant = $alloue - $engage;
-                
-                $parentData['comptes'][] = [
-                    'numero' => $compte->numero,
-                    'libelle' => $compte->libelle,
-                    'alloue' => $alloue,
-                    'engage' => $engage,
-                    'taux' => $taux,
-                    'restant' => $restant,
-                ];
-                
-                $parentData['total_alloue'] += $alloue;
-                $parentData['total_engage'] += $engage;
-            }
-            
-            if (!empty($parentData['comptes'])) {
-                $data[] = $parentData;
-            }
-        }
-        
-        return $this->generateCSVReport($data, 'rapport_mshp.csv', false);
+        $data = $this->prepareReportData(false);
+        $filename = 'rapport_mshp_' . date('Ymd_His') . '.csv';
+        return $this->generateCSVReport($data, $filename, false);
     }
     
     public function exportMFB()
     {
+        $data = $this->prepareReportData(true);
+        $filename = 'rapport_mfb_' . date('Ymd_His') . '.csv';
+        return $this->generateCSVReport($data, $filename, true);
+    }
+    
+    private function prepareReportData($isMFB = false)
+    {
         $budget = \App\Models\Budget::where('statut', 'actif')->first();
         
         // Get all CompteParents ordered by type (Fonctionnement first)
@@ -241,78 +210,126 @@ class ReportingController extends Controller
         
         $data = [];
         
-        foreach ($parents as $parent) {
-            // Get all comptes for this parent
-            $allComptes = Compte::where('compte_parent_id', $parent->id)
-                ->orderBy('numero')
-                ->get();
-            
-            // Aggregate by 4-digit prefix
-            $aggregated = [];
-            
-            foreach ($allComptes as $compte) {
-                // Get 4-digit prefix
-                $prefix = substr($compte->numero, 0, 4);
+        if ($isMFB) {
+            // MFB: Aggregated by 4-digit accounts
+            foreach ($parents as $parent) {
+                // Get all comptes for this parent
+                $allComptes = Compte::where('compte_parent_id', $parent->id)
+                    ->orderBy('numero')
+                    ->get();
                 
-                // Only include if numero is exactly 4 digits OR aggregate longer ones
-                $stats = LigneBudget::where('compte_id', $compte->id)
-                    ->when($budget, fn($q) => $q->where('budget_id', $budget->id))
-                    ->selectRaw('SUM(montant_alloue) as total_alloue, SUM(montant_engage) as total_engage')
-                    ->first();
+                // Aggregate by 4-digit prefix
+                $aggregated = [];
                 
-                $alloue = $stats->total_alloue ?? 0;
-                $engage = $stats->total_engage ?? 0;
-                
-                if (!isset($aggregated[$prefix])) {
-                    // Find the compte with exactly this 4-digit number for the label
-                    $baseCompte = Compte::where('compte_parent_id', $parent->id)
-                        ->where('numero', $prefix)
+                foreach ($allComptes as $compte) {
+                    // Get 4-digit prefix
+                    $prefix = substr($compte->numero, 0, 4);
+                    
+                    // Only include if numero is exactly 4 digits OR aggregate longer ones
+                    $stats = LigneBudget::where('compte_id', $compte->id)
+                        ->when($budget, fn($q) => $q->where('budget_id', $budget->id))
+                        ->selectRaw('SUM(montant_alloue) as total_alloue, SUM(montant_engage) as total_engage')
                         ->first();
                     
-                    $aggregated[$prefix] = [
-                        'numero' => $prefix,
-                        'libelle' => $baseCompte ? $baseCompte->libelle : 'Compte ' . $prefix,
-                        'alloue' => 0,
-                        'engage' => 0,
-                    ];
+                    $alloue = $stats->total_alloue ?? 0;
+                    $engage = $stats->total_engage ?? 0;
+                    
+                    if (!isset($aggregated[$prefix])) {
+                        // Find the compte with exactly this 4-digit number for the label
+                        $baseCompte = Compte::where('compte_parent_id', $parent->id)
+                            ->where('numero', $prefix)
+                            ->first();
+                        
+                        $aggregated[$prefix] = [
+                            'numero' => $prefix,
+                            'libelle' => $baseCompte ? $baseCompte->libelle : 'Compte ' . $prefix,
+                            'alloue' => 0,
+                            'engage' => 0,
+                        ];
+                    }
+                    
+                    $aggregated[$prefix]['alloue'] += $alloue;
+                    $aggregated[$prefix]['engage'] += $engage;
                 }
                 
-                $aggregated[$prefix]['alloue'] += $alloue;
-                $aggregated[$prefix]['engage'] += $engage;
-            }
-            
-            // Calculate taux and restant for aggregated data
-            $parentData = [
-                'parent' => $parent,
-                'comptes' => [],
-                'total_alloue' => 0,
-                'total_engage' => 0,
-            ];
-            
-            foreach ($aggregated as $item) {
-                $taux = $item['alloue'] > 0 ? ($item['engage'] / $item['alloue']) * 100 : 0;
-                $restant = $item['alloue'] - $item['engage'];
-                
-                $parentData['comptes'][] = [
-                    'numero' => $item['numero'],
-                    'libelle' => $item['libelle'],
-                    'alloue' => $item['alloue'],
-                    'engage' => $item['engage'],
-                    'taux' => $taux,
-                    'restant' => $restant,
+                // Calculate taux and restant for aggregated data
+                $parentData = [
+                    'parent' => $parent,
+                    'comptes' => [],
+                    'total_alloue' => 0,
+                    'total_engage' => 0,
                 ];
                 
-                $parentData['total_alloue'] += $item['alloue'];
-                $parentData['total_engage'] += $item['engage'];
+                foreach ($aggregated as $item) {
+                    $taux = $item['alloue'] > 0 ? ($item['engage'] / $item['alloue']) * 100 : 0;
+                    $restant = $item['alloue'] - $item['engage'];
+                    
+                    $parentData['comptes'][] = [
+                        'numero' => $item['numero'],
+                        'libelle' => $item['libelle'],
+                        'alloue' => $item['alloue'],
+                        'engage' => $item['engage'],
+                        'taux' => $taux,
+                        'restant' => $restant,
+                    ];
+                    
+                    $parentData['total_alloue'] += $item['alloue'];
+                    $parentData['total_engage'] += $item['engage'];
+                }
+                
+                if (!empty($parentData['comptes'])) {
+                    $data[] = $parentData;
+                }
             }
-            
-            if (!empty($parentData['comptes'])) {
-                $data[] = $parentData;
+        } else {
+            // MSHP: All accounts detailed
+            foreach ($parents as $parent) {
+                // Get all comptes for this parent with their budget data
+                $comptes = Compte::where('compte_parent_id', $parent->id)
+                    ->orderBy('numero')
+                    ->get();
+                
+                $parentData = [
+                    'parent' => $parent,
+                    'comptes' => [],
+                    'total_alloue' => 0,
+                    'total_engage' => 0,
+                ];
+                
+                foreach ($comptes as $compte) {
+                    // Sum across all services for this compte
+                    $stats = LigneBudget::where('compte_id', $compte->id)
+                        ->when($budget, fn($q) => $q->where('budget_id', $budget->id))
+                        ->selectRaw('SUM(montant_alloue) as total_alloue, SUM(montant_engage) as total_engage')
+                        ->first();
+                    
+                    $alloue = $stats->total_alloue ?? 0;
+                    $engage = $stats->total_engage ?? 0;
+                    $taux = $alloue > 0 ? ($engage / $alloue) * 100 : 0;
+                    $restant = $alloue - $engage;
+                    
+                    $parentData['comptes'][] = [
+                        'numero' => $compte->numero,
+                        'libelle' => $compte->libelle,
+                        'alloue' => $alloue,
+                        'engage' => $engage,
+                        'taux' => $taux,
+                        'restant' => $restant,
+                    ];
+                    
+                    $parentData['total_alloue'] += $alloue;
+                    $parentData['total_engage'] += $engage;
+                }
+                
+                if (!empty($parentData['comptes'])) {
+                    $data[] = $parentData;
+                }
             }
         }
         
-        return $this->generateCSVReport($data, 'rapport_mfb.csv', true);
+        return $data;
     }
+
     
     private function generateCSVReport($data, $filename, $isMFB = false)
     {

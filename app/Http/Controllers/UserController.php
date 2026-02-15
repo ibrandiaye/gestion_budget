@@ -24,6 +24,8 @@ class UserController extends Controller
             'password' => 'required|string|min:8',
             'role' => 'required|in:admin,service,controleur',
             'service_id' => 'nullable|required_if:role,service|exists:services,id',
+            'matricule' => 'nullable|string|max:50|unique:users',
+            'fonction' => 'nullable|string|max:255',
         ]);
 
         User::create([
@@ -32,9 +34,34 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'service_id' => $request->service_id,
+            'matricule' => $request->matricule,
+            'fonction' => $request->fonction,
         ]);
 
         return back()->with('success', 'Utilisateur créé avec succès.');
+    }
+    
+    public function update(Request $request, User $user)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'role' => 'required|in:admin,service,controleur',
+            'service_id' => 'nullable|required_if:role,service|exists:services,id',
+            'matricule' => 'nullable|string|max:50|unique:users,matricule,' . $user->id,
+            'fonction' => 'nullable|string|max:255',
+        ]);
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'service_id' => $request->service_id,
+            'matricule' => $request->matricule,
+            'fonction' => $request->fonction,
+        ]);
+
+        return back()->with('success', 'Utilisateur modifié avec succès.');
     }
 
     public function destroy(User $user)

@@ -57,13 +57,13 @@
         
         <!-- Excel Exports -->
         <div style="margin-bottom: 1.5rem;">
-            <h4 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem; font-weight: 600;">📊 Rapports Excel</h4>
+            <h4 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem; font-weight: 600;">📊 Rapports Budgétaires</h4>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <a href="{{ route('export.mshp') }}" class="btn-primary" style="text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fa fa-file-excel"></i> Export MSHP
+                <a href="{{ route('reporting.mshp') }}" class="btn-primary" style="text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa fa-table"></i> Rapport MSHP
                 </a>
-                <a href="{{ route('export.mfb') }}" class="btn-primary" style="text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fa fa-file-excel"></i> Export MFB (Agrégé)
+                <a href="{{ route('reporting.mfb') }}" class="btn-primary" style="text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa fa-table"></i> Rapport MFB (Agrégé)
                 </a>
             </div>
         </div>

@@ -17,6 +17,7 @@ use App\Http\Controllers\CommandeController;
 use App\Http\Controllers\EngagementController;
 use App\Http\Controllers\MandatController;
 use App\Http\Controllers\FournisseurController;
+use App\Http\Controllers\PermissionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -102,6 +103,8 @@ Route::middleware('auth')->group(function () {
     // Reporting
     Route::get('/reporting', [ReportingController::class, 'global'])->name('reporting.global');
     Route::get('/reporting/compte', [ReportingController::class, 'parCompte'])->name('reporting.accounts');
+    Route::get('/reporting/mshp', [ReportingController::class, 'viewMSHP'])->name('reporting.mshp');
+    Route::get('/reporting/mfb', [ReportingController::class, 'viewMFB'])->name('reporting.mfb');
     // Exports
     Route::get('/export/besoins/service', [ReportingController::class, 'exportBesoinsByService'])->name('export.besoins.service');
     Route::get('/export/besoins/compte', [ReportingController::class, 'exportBesoinsByCompte'])->name('export.besoins.compte');
@@ -109,6 +112,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/export/budget/compte', [ReportingController::class, 'exportBudgetByCompte'])->name('export.budget.compte');
     Route::get('/export/mshp', [ReportingController::class, 'exportMSHP'])->name('export.mshp');
     Route::get('/export/mfb', [ReportingController::class, 'exportMFB'])->name('export.mfb');
+
+    // Permissions Management
+    Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+    Route::put('/permissions/{role}', [PermissionController::class, 'updateRolePermissions'])->name('permissions.update');
 
     // Commandes
     Route::get('/commandes', [CommandeController::class, 'index'])->name('commandes.index');

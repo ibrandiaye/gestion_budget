@@ -88,6 +88,9 @@
                 <a href="{{ route('fournisseurs.index') }}" class="nav-item {{ request()->routeIs('fournisseurs.*') ? 'active' : '' }}">
                     <span class="icon">🏪</span> Fournisseurs
                 </a>
+                <a href="{{ route('permissions.index') }}" class="nav-item {{ request()->routeIs('permissions.*') ? 'active' : '' }}">
+                    <span class="icon">🔐</span> Permissions
+                </a>
                  <a href="{{ route('budgets.index') }}" class="nav-item {{ request()->routeIs('budgets.*') ? 'active' : '' }}">
                     <span class="icon">📅</span> Exercices
                 </a>

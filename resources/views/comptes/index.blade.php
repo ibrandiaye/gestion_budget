@@ -150,14 +150,8 @@
                         <input type="number" name="dotation_initiale" value="0" step="0.01"
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                     </div>
-                    <div>
-                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Prix Unitaire Réf.</label>
-                        <input type="number" name="prix_unitaire_ref" value="0" step="0.01"
-                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                    </div>
-                </div>
 
-                <div style="margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Etat</label>
                     <select name="etat" required
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
@@ -224,14 +218,8 @@
                         <input type="number" id="edit_dotation_initiale" name="dotation_initiale" step="0.01"
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                     </div>
-                    <div>
-                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Prix Unitaire Réf.</label>
-                        <input type="number" id="edit_prix_unitaire_ref" name="prix_unitaire_ref" step="0.01"
-                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                    </div>
-                </div>
 
-                <div style="margin-bottom: 1rem;">
+                    <div style="margin-bottom: 1rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Etat</label>
                     <select id="edit_etat" name="etat" required
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
