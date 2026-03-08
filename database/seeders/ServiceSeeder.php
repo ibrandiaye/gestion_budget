@@ -10,7 +10,7 @@ class ServiceSeeder extends Seeder
     public function run()
     {
         $services = [
-            ['nom' => 'Direction Générale', 'code' => 'DG', 'departement' => 'Administration'],
+            ['nom' => 'Direction Générale', 'code' => 'DGI', 'departement' => 'Administration'],
             ['nom' => 'Chirurgie Générale', 'code' => 'CHIR', 'departement' => 'Médical'],
             ['nom' => 'Pédiatrie', 'code' => 'PED', 'departement' => 'Médical'],
             ['nom' => 'Cardiologie', 'code' => 'CARD', 'departement' => 'Médical'],

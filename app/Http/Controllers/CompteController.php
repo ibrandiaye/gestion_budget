@@ -172,8 +172,13 @@ class CompteController extends Controller
     {
          
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:2048',
+            'file' => 'required|file|max:2048',
         ]);
+        
+        $extension = $request->file('file')->getClientOriginalExtension();
+        if (!in_array(strtolower($extension), ['csv', 'txt', 'xls', 'xlsx'])) {
+            return back()->withErrors(['file' => 'Le fichier doit être de type : csv, txt, xls, xlsx.']);
+        }
           
         try {
             $file = $request->file('file');
@@ -206,16 +211,27 @@ class CompteController extends Controller
                         $errors[] = "Ligne $lineNumber: Nombre de colonnes insuffisant";
                         continue;
                     } 
-                   
+                    // Nettoyage des valeurs (ex: espaces dans les nombres, virgules de fin de ligne dans le CSV)
+                    $dotationRaw = str_replace(' ', '', trim($row[5]));
+                    $prixRaw = str_replace(' ', '', trim($row[6]));
+                    
+                    // Retirer les éventuelles virgules finales sur l'état (souvent ajoutées par Excel lors d'exports CSV imparfaits)
+                    $etatClean = trim(explode(',', trim($row[7]))[0]);
+
+                    // Convertir l'encodage si nécessaire (Excel exporte souvent en Windows-1252 ou ISO-8859-1)
+                    $libelle = mb_convert_encoding(trim($row[1]), 'UTF-8', 'UTF-8, ISO-8859-1, Windows-1252');
+                    $numero = mb_convert_encoding(trim($row[0]), 'UTF-8', 'UTF-8, ISO-8859-1, Windows-1252');
+                    $parent_numero = mb_convert_encoding(trim($row[2]), 'UTF-8', 'UTF-8, ISO-8859-1, Windows-1252');
+
                     $data = [
-                        'numero' => trim($row[0]),
-                        'libelle' => trim($row[1]),
-                        'parent_numero' => trim($row[2]),
+                        'numero' => $numero,
+                        'libelle' => $libelle,
+                        'parent_numero' => $parent_numero,
                         'is_marche' => $row[3] == '1',
                         'fournisseur_requis' => $row[4] == '1',
-                        'dotation_initiale' => floatval($row[5]),
-                        'prix_unitaire_ref' => floatval($row[6]),
-                        'etat' => trim($row[7]),
+                        'dotation_initiale' => floatval($dotationRaw),
+                        'prix_unitaire_ref' => floatval($prixRaw),
+                        'etat' => strtolower($etatClean),
                     ];
 
                     // Validation & Parent Lookup
