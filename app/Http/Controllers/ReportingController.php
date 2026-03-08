@@ -80,20 +80,66 @@ class ReportingController extends Controller
     {
         $budget = \App\Models\Budget::where('statut', 'actif')->first();
 
-        // Aggregate by Compte (across all services)
-        $query = LigneBudget::select(
-            'compte_id',
-            DB::raw('SUM(montant_alloue) as total_alloue'),
-            DB::raw('SUM(montant_engage) as total_engage')
-        )
-            ->groupBy('compte_id')
-            ->with(['compte']);
+        // Recuperer tous les comptes actifs (feuilles)
+        $comptes = \App\Models\Compte::where('etat', 'actif')
+            ->whereNotNull('compte_parent_id')
+            ->with(['compteParent'])
+            ->get();
 
-        if ($budget) {
-            $query->where('budget_id', $budget->id);
-        }
+        $statsComptes = $comptes->map(function ($compte) use ($budget) {
+            
+            $total_alloue = 0;
+            if ($budget) {
+                $total_alloue = $compte->getDotationForBudget($budget->id);
+            } else {
+                 // Fallback if no active budget, maybe show latest? or 0.
+                 // For now 0 is safe or we can keep old behavior if needed, but old behavior was static.
+                 // Let's assume 0 if no budget context.
+                 $total_alloue = 0; 
+            }
+            
+            $total_besoins = 0;
+            $total_engage = 0;
 
-        $statsComptes = $query->get()->sortBy('compte.numero');
+            if ($budget) {
+                // Somme des besoins pour ce compte et ce budget
+                // On récupère les besoins et on fait la somme en PHP pour gérer les anciens enregistrements
+                // où montant_demande pourrait être null
+                $besoins = \App\Models\Besoin::where('budget_id', $budget->id)
+                    ->where('compte_id', $compte->id)
+                    ->get();
+                
+                $total_besoins = $besoins->sum(function($besoin) use ($compte) {
+                    // Si le montant est déjà défini, on l'utilise
+                    if (!empty($besoin->montant_demande) && $besoin->montant_demande > 0) {
+                        return $besoin->montant_demande;
+                    }
+                    
+                    // Sinon (anciennes données), on calcule : Quantité * Prix
+                    // Priorité au prix unitaire du besoin, sinon prix ref du compte
+                    $prix = !empty($besoin->prix_unitaire) && $besoin->prix_unitaire > 0 
+                        ? $besoin->prix_unitaire 
+                        : $compte->prix_unitaire_ref;
+                        
+                    return $besoin->quantite * $prix;
+                });
+
+                // Somme des engagements pour ce compte et ce budget (via commandes)
+                $total_engage = \App\Models\Engagement::whereHas('commande', function($q) use ($budget, $compte) {
+                    $q->where('budget_id', $budget->id)
+                      ->where('compte_id', $compte->id);
+                })->sum('montant');
+            }
+
+            // Structure pour la vue
+            return (object) [
+                'compte' => $compte,
+                'total_alloue' => $total_alloue,
+                'total_besoins' => $total_besoins,
+                'total_engage' => $total_engage,
+                // Le reste sera calculé dans la vue ou ici
+            ];
+        })->sortBy('compte.numero');
 
         return view('reporting.accounts', compact('statsComptes'));
     }
@@ -137,7 +183,7 @@ class ReportingController extends Controller
 
     public function exportBudgetByService()
     {
-        $headers = ['Service', 'Total Alloue', 'Total Engage', 'Taux Execution'];
+        $headers = ['Service', 'Montant Affecté', 'Total Engage', 'Taux Execution'];
         $data = LigneBudget::with('service')
             ->select('service_id', DB::raw('SUM(montant_alloue) as alloue'), DB::raw('SUM(montant_engage) as engage'))
             ->groupBy('service_id')
@@ -156,19 +202,35 @@ class ReportingController extends Controller
 
     public function exportBudgetByCompte()
     {
-        $headers = ['Compte Numero', 'Compte Libelle', 'Total Alloue', 'Total Engage'];
-        $data = LigneBudget::with('compte')
-            ->select('compte_id', DB::raw('SUM(montant_alloue) as alloue'), DB::raw('SUM(montant_engage) as engage'))
-            ->groupBy('compte_id')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    $item->compte->numero,
-                    $item->compte->libelle,
-                    $item->alloue,
-                    $item->engage
-                ];
-            });
+        $headers = ['Compte Numero', 'Compte Libelle', 'Montant Affecté', 'Total Engage'];
+        
+        $budget = \App\Models\Budget::where('statut', 'actif')->first();
+        
+        $comptes = \App\Models\Compte::where('etat', 'actif')
+            ->whereNotNull('compte_parent_id')
+            ->get();
+            
+        $data = $comptes->map(function ($compte) use ($budget) {
+            $alloue = 0;
+            if ($budget) {
+                $alloue = $compte->getDotationForBudget($budget->id);
+            }
+            $engage = 0;
+            
+            if ($budget) {
+                $engage = \App\Models\Engagement::whereHas('commande', function($q) use ($budget, $compte) {
+                    $q->where('budget_id', $budget->id)
+                      ->where('compte_id', $compte->id);
+                })->sum('montant');
+            }
+            
+            return [
+                $compte->numero,
+                $compte->libelle,
+                $alloue,
+                $engage
+            ];
+        })->sortBy(0); // Sort by numero (index 0)
 
         return $this->exportToCsv('budget_par_compte.csv', $headers, $data);
     }
@@ -300,10 +362,14 @@ class ReportingController extends Controller
                     // Sum across all services for this compte
                     $stats = LigneBudget::where('compte_id', $compte->id)
                         ->when($budget, fn($q) => $q->where('budget_id', $budget->id))
-                        ->selectRaw('SUM(montant_alloue) as total_alloue, SUM(montant_engage) as total_engage')
+                        ->selectRaw('SUM(montant_engage) as total_engage')
                         ->first();
                     
-                    $alloue = $stats->total_alloue ?? 0;
+                    $alloue = 0;
+                    if ($budget) {
+                        $alloue = $compte->getDotationForBudget($budget->id);
+                    }
+                    
                     $engage = $stats->total_engage ?? 0;
                     $taux = $alloue > 0 ? ($engage / $alloue) * 100 : 0;
                     $restant = $alloue - $engage;
@@ -350,7 +416,7 @@ class ReportingController extends Controller
                 $this->fputcsv_semicolon($file, [$parent->numero . ' - ' . $parent->libelle . ' (' . $parent->type . ')']);
                 
                 // Column headers
-                $this->fputcsv_semicolon($file, ['Numero', 'Libelle', 'Total Alloue', 'Total Execute', 'Taux (%)', 'Restant']);
+                $this->fputcsv_semicolon($file, ['Numero', 'Libelle', 'Montant Affecté', 'Total Execute', 'Taux (%)', 'Restant']);
                 
                 // Compte rows
                 foreach ($parentData['comptes'] as $compte) {

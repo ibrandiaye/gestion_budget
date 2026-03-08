@@ -37,7 +37,9 @@ class BudgetController extends Controller
             }
 
             // Calculate total estimated needs based on account reference price
-            $totalEstimation = $besoins->sum('quantite') * ($compte->prix_unitaire_ref ?? 0);
+            $activeBudget = Budget::where('statut', 'actif')->first();
+            $prixRef = $compte->getPrixUnitaireRefForBudget($activeBudget ? $activeBudget->id : 0);
+            $totalEstimation = $besoins->sum('quantite') * $prixRef;
 
             return view('budget.arbitrage_detail', compact('compte', 'besoins', 'totalEstimation'));
         }
@@ -124,9 +126,11 @@ class BudgetController extends Controller
 
             $projectedTotal = $existingTotal + $newPropsalTotal;
 
-            if ($compte->dotation_initiale > 0 && $projectedTotal > $compte->dotation_initiale) {
-                $depassement = $projectedTotal - $compte->dotation_initiale;
-                $message = "Le montant total accordé (" . number_format($projectedTotal, 0, ',', ' ') . " FCFA) dépasse la dotation du compte (" . number_format($compte->dotation_initiale, 0, ',', ' ') . " FCFA). Dépassement de : " . number_format($depassement, 0, ',', ' ') . " FCFA.";
+            $dotation = $compte->getDotationForBudget($budget->id);
+
+            if ($dotation > 0 && $projectedTotal > $dotation) {
+                $depassement = $projectedTotal - $dotation;
+                $message = "Le montant total accordé (" . number_format($projectedTotal, 0, ',', ' ') . " FCFA) dépasse la dotation du compte (" . number_format($dotation, 0, ',', ' ') . " FCFA). Dépassement de : " . number_format($depassement, 0, ',', ' ') . " FCFA.";
                 
                 throw \Illuminate\Validation\ValidationException::withMessages(['error' => $message]);
             }

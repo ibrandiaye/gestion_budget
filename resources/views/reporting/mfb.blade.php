@@ -37,7 +37,7 @@
                         <tr style="border-bottom: 2px solid var(--border-color); text-align: left; font-size: 0.85rem; color: var(--text-muted);">
                             <th style="padding: 0.75rem;">Numéro</th>
                             <th style="padding: 0.75rem;">Libellé</th>
-                            <th style="padding: 0.75rem; text-align: right;">Total Alloué</th>
+                            <th style="padding: 0.75rem; text-align: right;">Montant Affecté</th>
                             <th style="padding: 0.75rem; text-align: right;">Total Exécuté</th>
                             <th style="padding: 0.75rem; text-align: right;">Taux (%)</th>
                             <th style="padding: 0.75rem; text-align: right;">Restant</th>

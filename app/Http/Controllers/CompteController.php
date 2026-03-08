@@ -10,12 +10,34 @@ class CompteController extends Controller
 {
     public function index()
     {
-        // Get parents with their accounts
-        $parents = CompteParent::with('comptes')->orderBy('numero')->get();
+        $activeBudget = \App\Models\Budget::where('statut', 'actif')->first();
+
+        // Get parents with their accounts, including dotation for active budget
+        $parents = CompteParent::with(['comptes' => function($q) use ($activeBudget) {
+            $q->with(['dotations' => function($d) use ($activeBudget) {
+                if ($activeBudget) {
+                    $d->where('budget_id', $activeBudget->id);
+                } else {
+                    $d->whereNull('id'); // No results if no budget
+                }
+            }]);
+        }])->orderBy('numero')->get();
+
+        // Overlay the correct dotation for the view
+        $parents->each(function($parent) {
+            $parent->comptes->each(function($compte) {
+                $compte->dotation_actuelle = $compte->dotations->first()->dotation_initiale ?? 0;
+                $compte->prix_ref_actuel = $compte->dotations->first()->prix_unitaire_ref ?? 0;
+                // We overwrite the standard property for the JSON serialization in the view to work easily
+                $compte->dotation_initiale = $compte->dotation_actuelle;
+                $compte->prix_unitaire_ref = $compte->prix_ref_actuel;
+            });
+        });
+
         // Get all parents for selection dropdown
         $allParents = CompteParent::all();
 
-        return view('comptes.index', compact('parents', 'allParents'));
+        return view('comptes.index', compact('parents', 'allParents', 'activeBudget'));
     }
 
     public function store(Request $request)
@@ -37,6 +59,27 @@ class CompteController extends Controller
             'fournisseur_requis' => $request->has('fournisseur_requis'),
         ]));
 
+        // Handle Dotation for Active Budget
+        if ($request->filled('dotation_initiale') || $request->filled('prix_unitaire_ref')) {
+            $budget = \App\Models\Budget::where('statut', 'actif')->orderByDesc('annee')->first();
+            if (!$budget) {
+                // Try brouillon or create? If no budget, we can't save dotation properly linked.
+                // Fallback: Just ignore or warn? 
+                // Let's try to find ANY active/draft budget.
+                $budget = \App\Models\Budget::orderByDesc('annee')->first();
+            }
+
+            if ($budget) {
+                \App\Models\DotationCompte::updateOrCreate(
+                    ['budget_id' => $budget->id, 'compte_id' => $compte->id],
+                    [
+                        'dotation_initiale' => $request->dotation_initiale ?? 0,
+                        'prix_unitaire_ref' => $request->prix_unitaire_ref ?? 0
+                    ]
+                );
+            }
+        }
+
         return back()->with('success', 'Compte ajouté avec succès.');
     }
 
@@ -57,6 +100,24 @@ class CompteController extends Controller
             'is_marche' => $request->has('is_marche') ? true : false,
             'fournisseur_requis' => $request->has('fournisseur_requis') ? true : false,
         ]));
+
+        // Handle Dotation Update for Active Budget
+        if ($request->has('dotation_initiale') || $request->has('prix_unitaire_ref')) {
+             $budget = \App\Models\Budget::where('statut', 'actif')->orderByDesc('annee')->first();
+             if (!$budget) {
+                 $budget = \App\Models\Budget::orderByDesc('annee')->first();
+             }
+
+             if ($budget) {
+                \App\Models\DotationCompte::updateOrCreate(
+                    ['budget_id' => $budget->id, 'compte_id' => $compte->id],
+                    [
+                        'dotation_initiale' => $request->dotation_initiale ?? 0,
+                        'prix_unitaire_ref' => $request->prix_unitaire_ref ?? 0
+                    ]
+                );
+             }
+        }
 
         return back()->with('success', 'Compte mis à jour avec succès.');
     }
@@ -169,7 +230,7 @@ class CompteController extends Controller
                          continue;
                     }
 
-                    Compte::create([
+                    $compte = Compte::create([
                         'numero' => $data['numero'],
                         'libelle' => $data['libelle'],
                         'compte_parent_id' => $parent->id,
@@ -179,6 +240,22 @@ class CompteController extends Controller
                         'prix_unitaire_ref' => $data['prix_unitaire_ref'],
                         'etat' => $data['etat'],
                     ]);
+
+                    // Handle Dotation for Active Budget (Import)
+                    // We try to find active budget once outside loop or inside? Inside is safer if we want to be robust but slower.
+                    // Given the loop, let's just find it once ideally, but here context is simple.
+                    $budget = \App\Models\Budget::where('statut', 'actif')->orderByDesc('annee')->first();
+                    if (!$budget) $budget = \App\Models\Budget::orderByDesc('annee')->first();
+
+                    if ($budget && ($data['dotation_initiale'] > 0 || $data['prix_unitaire_ref'] > 0)) {
+                        \App\Models\DotationCompte::updateOrCreate(
+                            ['budget_id' => $budget->id, 'compte_id' => $compte->id],
+                            [
+                                'dotation_initiale' => $data['dotation_initiale'],
+                                'prix_unitaire_ref' => $data['prix_unitaire_ref']
+                            ]
+                        );
+                    }
 
                     $imported++;
                 }

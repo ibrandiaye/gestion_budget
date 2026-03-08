@@ -68,23 +68,28 @@ class CommandeController extends Controller
             $montantTotal += $art['quantite'] * $art['prix_unitaire'];
         }
 
-        // Check budget availability
-        $ligneBudget = LigneBudget::where('budget_id', $budget->id)
-            ->where('compte_id', $request->compte_id)
-            ->where('service_id', Auth::user()->service_id)
-            ->first();
-
-        if (!$ligneBudget) {
-            return back()->withErrors(['budget' => 'Aucune ligne budgétaire trouvée pour ce compte et service.']);
-        }
-
-        $disponible = $ligneBudget->montant_alloue - $ligneBudget->montant_engage;
+        // --- DEBUT MODIFICATION : Contrôle Budget Global Compte ---
+        // On ne vérifie plus la ligne budgétaire par service stricto sensu pour le blocage,
+        // mais la dotation globale du compte.
+        
+        $compte = Compte::findOrFail($request->compte_id);
+        $dotation = $compte->getDotationForBudget($budget->id);
+        
+        // Calculer le total déjà engagé sur ce compte pour ce budget (tous services confondus)
+        // On regarde les engagements liés à des commandes de ce budget et ce compte
+        $totalEngageCompte = Engagement::whereHas('commande', function($q) use ($budget, $request) {
+            $q->where('budget_id', $budget->id)
+              ->where('compte_id', $request->compte_id);
+        })->sum('montant');
+        
+        $disponible = $dotation - $totalEngageCompte;
 
         if ($montantTotal > $disponible) {
             return back()->withErrors([
-                'budget' => "Montant insuffisant. Disponible: " . number_format($disponible, 0, ',', ' ') . " FCFA. Demandé: " . number_format($montantTotal, 0, ',', ' ') . " FCFA."
+                'budget' => "Budget insuffisant sur le compte " . $compte->numero . ". Dotation: " . number_format($dotation, 0, ',', ' ') . " FCFA. Disponible réel: " . number_format($disponible, 0, ',', ' ') . " FCFA. Demandé: " . number_format($montantTotal, 0, ',', ' ') . " FCFA."
             ]);
         }
+        // --- FIN MODIFICATION ---
 
         $fichierPath = null;
         if ($request->hasFile('fichier')) {

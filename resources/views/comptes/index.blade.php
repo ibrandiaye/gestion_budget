@@ -18,7 +18,18 @@
     @endif
 
     <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: center; justify-content: space-between;">
-        <h2 style="margin: 0;">Plan Comptable</h2>
+        <div>
+            <h2 style="margin: 0;">Plan Comptable</h2>
+            @if(isset($activeBudget))
+                <div style="color: var(--primary); font-weight: 600; font-size: 0.9rem; margin-top: 0.25rem;">
+                    Budget Actif : {{ $activeBudget->annee }} (Dotations modifiables pour cet exercice)
+                </div>
+            @else
+                <div style="color: var(--danger); font-weight: 600; font-size: 0.9rem; margin-top: 0.25rem;">
+                    ⚠️ Aucun budget actif. Les dotations ne seront pas liées.
+                </div>
+            @endif
+        </div>
         <div style="display: flex; gap: 1rem;">
             <a href="{{ route('comptes.template') }}" class="btn-secondary" style="text-decoration: none;">
                 📥 Télécharger Modèle CSV
@@ -77,14 +88,12 @@
                                         <span style="font-size: 0.75rem; margin-left: 0.5rem; color: {{ $compte->etat === 'actif' ? 'var(--success)' : 'var(--danger)' }};">
                                             {{ ucfirst($compte->etat) }}
                                         </span>
-                                        @if($compte->dotation_initiale > 0)
                                             <span style="font-size: 0.75rem; margin-left: 0.5rem; color: var(--primary); font-weight: 600;">
-                                                Dotation: {{ number_format($compte->dotation_initiale, 0, ',', ' ') }} FCFA
+                                                Dotation {{ isset($activeBudget) ? $activeBudget->annee : '' }}: {{ number_format($compte->dotation_initiale, 0, ',', ' ') }} FCFA
                                             </span>
-                                        @endif
                                     </div>
                                     <div>
-                                        <button onclick="openCompteModal({{ $compte }})"
+                                        <button data-compte="{{ json_encode($compte) }}" onclick="openCompteModal(JSON.parse(this.getAttribute('data-compte')))"
                                             style="border: none; background: none; color: var(--primary); cursor: pointer; font-size: 0.9rem; margin-right: 0.5rem;">✏️</button>
                                          <form action="{{ route('comptes.destroy', $compte) }}" method="POST" style="display: inline;"
                                             onsubmit="return confirm('Confirmer suppression ?')">
@@ -239,22 +248,36 @@
 
     <script>
         function openCompteModal(compte) {
-            const modal = document.getElementById('compteModal');
-            const form = document.getElementById('editCompteForm');
+            console.log('Opening modal for:', compte);
+            try {
+                const modal = document.getElementById('compteModal');
+                const form = document.getElementById('editCompteForm');
 
-            document.getElementById('edit_numero').value = compte.numero;
-            document.getElementById('edit_libelle').value = compte.libelle;
-            // document.getElementById('edit_type').value = compte.type; // Removed
-            document.getElementById('edit_is_marche').checked = compte.is_marche || false;
-            document.getElementById('edit_fournisseur_requis').checked = compte.fournisseur_requis !== false;
-            document.getElementById('edit_etat').value = compte.etat || 'actif';
-            document.getElementById('edit_dotation_initiale').value = compte.dotation_initiale || 0;
-            document.getElementById('edit_prix_unitaire_ref').value = compte.prix_unitaire_ref || 0;
-            document.getElementById('edit_compte_parent_id').value = compte.compte_parent_id || '';
+                if (!modal || !form) {
+                    console.error('Modal or form not found');
+                    return;
+                }
 
-            let updateUrl = "{{ route('comptes.update', ':id') }}";
-            form.action = updateUrl.replace(':id', compte.id);
-            modal.style.display = 'flex';
+                document.getElementById('edit_numero').value = compte.numero;
+                document.getElementById('edit_libelle').value = compte.libelle;
+                // document.getElementById('edit_type').value = compte.type; // Removed
+                if (document.getElementById('edit_is_marche')) document.getElementById('edit_is_marche').checked = compte.is_marche || false;
+                if (document.getElementById('edit_fournisseur_requis')) document.getElementById('edit_fournisseur_requis').checked = compte.fournisseur_requis !== false;
+                document.getElementById('edit_etat').value = compte.etat || 'actif';
+                
+                // Dotation fields might be missing if 0, handle safely
+                if (document.getElementById('edit_dotation_initiale')) document.getElementById('edit_dotation_initiale').value = compte.dotation_actuelle || compte.dotation_initiale || 0;
+                if (document.getElementById('edit_prix_unitaire_ref')) document.getElementById('edit_prix_unitaire_ref').value = compte.prix_ref_actuel || compte.prix_unitaire_ref || 0;
+                
+                document.getElementById('edit_compte_parent_id').value = compte.compte_parent_id || '';
+
+                let updateUrl = "{{ route('comptes.update', ':id') }}";
+                form.action = updateUrl.replace(':id', compte.id);
+                modal.style.display = 'flex';
+            } catch (e) {
+                console.error('Error in openCompteModal:', e);
+                alert('Erreur lors de l\'ouverture de la modification: ' + e.message);
+            }
         }
 
         function closeCompteModal() {

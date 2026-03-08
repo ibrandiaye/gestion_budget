@@ -20,4 +20,9 @@ class Budget extends Model
     {
         return $this->hasMany(Ajustement::class);
     }
+
+    public function dotationsComptes()
+    {
+        return $this->hasMany(DotationCompte::class);
+    }
 }

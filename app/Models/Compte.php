@@ -35,4 +35,21 @@ class Compte extends Model
     {
         return $this->hasMany(Article::class);
     }
+
+    public function dotations()
+    {
+        return $this->hasMany(DotationCompte::class);
+    }
+
+    public function getDotationForBudget($budgetId)
+    {
+         $dotation = $this->dotations()->where('budget_id', $budgetId)->first();
+         return $dotation ? $dotation->dotation_initiale : 0;
+    }
+
+    public function getPrixUnitaireRefForBudget($budgetId)
+    {
+         $dotation = $this->dotations()->where('budget_id', $budgetId)->first();
+         return $dotation ? $dotation->prix_unitaire_ref : ($this->prix_unitaire_ref ?? 0); // Fallback to old field if not found, for safety
+    }
 }

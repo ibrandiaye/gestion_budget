@@ -61,12 +61,38 @@ class BesoinController extends Controller
             return back()->withErrors(['msg' => 'Aucun exercice budgétaire ouvert pour recevoir les demandes.']);
         }
 
+        // --- DEBUT MODIFICATION : Contrôle Budget Global Compte ---
+        $compte = Compte::findOrFail($request->compte_id);
+        $dotation = $compte->getDotationForBudget($budget->id);
+        $prixReference = $compte->getPrixUnitaireRefForBudget($budget->id);
+        
+        // Coût du besoin actuel
+        // On utilise le prix de référence s'il existe, sinon on supposerait un montant estimé (ici on se base sur ref)
+        // Si prix_unitaire_ref est 0, on ne peut pas estimer le coût sans saisie utilisateur.
+        // Supposons que le montant_demande soit calculé ou saisissable, mais ici on a quantite * prix_ref
+        $coutActuel = $request->quantite * $prixReference;
+
+        // Somme des besoins existants pour ce compte dans ce budget (tous services confondus)
+        // On calcule le coût estimé des besoins existants : quantité * prix_ref du compte
+        $quantiteTotaleExistante = Besoin::where('budget_id', $budget->id)
+            ->where('compte_id', $request->compte_id)
+            ->sum('quantite');
+            
+        $coutTotalExistant = $quantiteTotaleExistante * $prixReference;
+
+        if (($coutTotalExistant + $coutActuel) > $dotation) {
+             return back()->withErrors(['msg' => "Budget insuffisant sur le compte " . $compte->numero . ". Dotation: " . number_format($dotation, 0, ',', ' ') . " FCFA. Disponible théorique: " . number_format($dotation - $coutTotalExistant, 0, ',', ' ') . " FCFA."]);
+        }
+        // --- FIN MODIFICATION ---
+
         Besoin::create([
             'budget_id' => $budget->id,
             'service_id' => Auth::user()->service_id,
             'compte_id' => $request->compte_id,
             'libelle' => $request->libelle,
             'quantite' => $request->quantite,
+            'prix_unitaire' => $compte->prix_unitaire_ref, // Enregistrement du prix ref
+            'montant_demande' => $coutActuel, // Enregistrement du montant estimé
             'justification' => $request->justification,
             'statut' => 'cree',
         ]);
