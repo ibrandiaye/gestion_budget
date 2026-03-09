@@ -106,9 +106,14 @@
                             </li>
                         @endforeach
                     </ul>
+                    <!-- Parent total dotation -->
+                    <div style="font-weight: 600; margin-top: 0.5rem;">
+                        Total Dotation {{ $parent->numero }}: {{ number_format($parent->comptes->sum('dotation_initiale'), 0, ',', ' ') }} FCFA
+                    </div>
                 </div>
-            @endforeach
+                @endforeach
         </div>
+
 
         <!-- Create Compte Form -->
         <div class="card" style="height: fit-content;">

@@ -23,7 +23,9 @@
                 <div>
                     <h3 class="stat-title">Budget Total ({{ $data['annee'] }})</h3>
                     <div class="stat-value" style="color: var(--slate-900);">
-                        {{ number_format($data['total_alloue'], 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
+                        <!-- {{ number_format($data['total_alloue'], 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span> -->
+
+                        {{ number_format($data['total_dotation'], 0, ',', ' ') }} <span style="font-size: 0.9rem; color: var(--text-muted);">FCFA</span>
                     </div>
                 </div>
                 <div style="background: var(--primary-50); color: var(--primary-600); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
