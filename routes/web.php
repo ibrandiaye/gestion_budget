@@ -18,6 +18,8 @@ use App\Http\Controllers\EngagementController;
 use App\Http\Controllers\MandatController;
 use App\Http\Controllers\FournisseurController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\MarcheController;
+use App\Http\Controllers\PvReceptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -116,6 +118,12 @@ Route::middleware('auth')->group(function () {
     // Permissions Management
     Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
     Route::put('/permissions/{role}', [PermissionController::class, 'updateRolePermissions'])->name('permissions.update');
+
+    // Marchés
+    Route::resource('marches', MarcheController::class)->parameters(['marches' => 'marche']);
+
+    // PV de Réception
+    Route::resource('pv-receptions', PvReceptionController::class);
 
     // Commandes
     Route::get('/commandes', [CommandeController::class, 'index'])->name('commandes.index');

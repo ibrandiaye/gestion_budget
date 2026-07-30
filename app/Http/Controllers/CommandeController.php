@@ -36,8 +36,9 @@ class CommandeController extends Controller
             ->get();
         
         $budget = Budget::whereIn('statut', ['brouillon', 'actif'])->latest('annee')->first();
+        $marches = \App\Models\Marche::all();
 
-        return view('commandes.create', compact('comptes', 'budget'));
+        return view('commandes.create', compact('comptes', 'budget', 'marches'));
     }
 
     public function store(Request $request)
@@ -49,11 +50,13 @@ class CommandeController extends Controller
             'reference' => 'nullable|string|max:191',
             'caisse' => 'nullable|string|max:100',
             'fichier' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120', // Max 5MB
-            'articles' => 'required|array|min:1',
-            'articles.*.designation' => 'required|string|max:191',
+            'source' => 'required|string|in:Marché,Facture Pro-forma,Autre',
+            'marche_id' => 'nullable|exists:marches,id|required_if:source,Marché',
+            'articles' => 'required_unless:source,Marché|array',
+            'articles.*.designation' => 'required_with:articles|string|max:191',
             'articles.*.conditionnement' => 'nullable|string|max:100',
-            'articles.*.quantite' => 'required|integer|min:1',
-            'articles.*.prix_unitaire' => 'required|numeric|min:0',
+            'articles.*.quantite' => 'required_with:articles|integer|min:1',
+            'articles.*.prix_unitaire' => 'required_with:articles|numeric|min:0',
         ]);
 
         $budget = Budget::whereIn('statut', ['brouillon', 'actif'])->latest('annee')->first();
@@ -62,9 +65,23 @@ class CommandeController extends Controller
             return back()->withErrors(['budget' => 'Aucun exercice budgétaire actif.']);
         }
 
+        // Resolve articles if source is Marché
+        $articlesSource = $request->articles;
+        if ($request->source === 'Marché') {
+            $marche = \App\Models\Marche::with('articles')->find($request->marche_id);
+            $articlesSource = $marche->articles->map(function($art) {
+                return [
+                    'designation' => $art->designation,
+                    'conditionnement' => $art->conditionnement,
+                    'quantite' => $art->quantite,
+                    'prix_unitaire' => $art->prix_unitaire,
+                ];
+            })->toArray();
+        }
+
         // Calculate total amount
         $montantTotal = 0;
-        foreach ($request->articles as $art) {
+        foreach ($articlesSource as $art) {
             $montantTotal += $art['quantite'] * $art['prix_unitaire'];
         }
 
@@ -105,6 +122,8 @@ class CommandeController extends Controller
                 'budget_id' => $budget->id,
                 'fournisseur' => $request->fournisseur,
                 'reference' => $request->reference,
+                'source' => $request->source,
+                'marche_id' => $request->source === 'Marché' ? $request->marche_id : null,
                 'caisse' => $request->caisse ?? 'Caisse avance',
                 'fichier' => $fichierPath ?? null,
                 'montant_tva' => 0,
@@ -112,7 +131,7 @@ class CommandeController extends Controller
                 'statut' => 'brouillon',
             ]);
 
-            foreach ($request->articles as $art) {
+            foreach ($articlesSource as $art) {
                 CommandeArticle::create([
                     'commande_id' => $commande->id,
                     'article_id' => $art['article_id'] ?? null,

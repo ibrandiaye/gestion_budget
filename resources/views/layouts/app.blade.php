@@ -58,8 +58,14 @@
                 </a>
 
                 <div class="nav-section">Dépenses</div>
+                <a href="{{ route('marches.index') }}" class="nav-item {{ request()->routeIs('marches.*') ? 'active' : '' }}">
+                    <span class="icon">📝</span> Marchés
+                </a>
                 <a href="{{ route('commandes.index') }}" class="nav-item {{ request()->routeIs('commandes.*') ? 'active' : '' }}">
                     <span class="icon">📋</span> Commandes
+                </a>
+                <a href="{{ route('pv-receptions.index') }}" class="nav-item {{ request()->routeIs('pv-receptions.*') ? 'active' : '' }}">
+                    <span class="icon">📦</span> PV Réceptions
                 </a>
                 <a href="{{ route('engagements.index') }}" class="nav-item {{ request()->routeIs('engagements.*') ? 'active' : '' }}">
                     <span class="icon">📄</span> Engagements

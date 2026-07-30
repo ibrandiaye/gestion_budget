@@ -43,6 +43,28 @@
                     </div>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Source *</label>
+                        <select name="source" id="sourceSelect" required onchange="toggleSource()"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                            <option value="Facture Pro-forma">Facture Pro-forma</option>
+                            <option value="Marché">Marché</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                    <div id="marcheContainer" style="display: none;">
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Marché lié *</label>
+                        <select name="marche_id" id="marcheSelect"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                            <option value="">Sélectionner un marché...</option>
+                            @foreach($marches ?? [] as $marche)
+                                <option value="{{ $marche->id }}">{{ $marche->numero ?? $marche->intitule }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
                 <div id="fournisseurSection" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div>
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">
@@ -91,7 +113,8 @@
                     </div>
                 </div>
 
-                <div style="margin-bottom: 1.5rem;">
+                <div id="articlesSection">
+                    <div style="margin-bottom: 1.5rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <label style="font-weight: 700;">Articles de la commande</label>
                         <button type="button" onclick="addArticleLine()" class="btn-secondary" style="padding: 0.5rem 1rem;">+ Ajouter article</button>
@@ -108,6 +131,7 @@
                         <span id="totalDisplay" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-700);">0 FCFA</span>
                     </div>
                 </div>
+                </div> <!-- End of articlesSection -->
 
                 <div style="display: flex; justify-content: flex-end; gap: 1rem;">
                     <button type="button" onclick="history.back()" class="btn-secondary">Annuler</button>
@@ -122,6 +146,23 @@
         let currentFournisseurArticles = [];
         let selectedCompteId = null;
         let fournisseurRequis = true;
+
+        function toggleSource() {
+            const source = document.getElementById('sourceSelect').value;
+            const marcheContainer = document.getElementById('marcheContainer');
+            const articlesSection = document.getElementById('articlesSection');
+            const marcheSelect = document.getElementById('marcheSelect');
+
+            if (source === 'Marché') {
+                marcheContainer.style.display = 'block';
+                articlesSection.style.display = 'none';
+                marcheSelect.required = true;
+            } else {
+                marcheContainer.style.display = 'none';
+                articlesSection.style.display = 'block';
+                marcheSelect.required = false;
+            }
+        }
 
         async function loadFournisseurs() {
             const compteSelect = document.getElementById('compteSelect');

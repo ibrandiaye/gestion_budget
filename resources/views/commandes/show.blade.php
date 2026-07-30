@@ -141,6 +141,7 @@
                 @if($commande->engagement)
                     <a href="{{ route('engagements.show', $commande->engagement) }}" class="btn-secondary">Voir l'engagement →</a>
                 @endif
+                <a href="{{ route('pv-receptions.create', ['commande_id' => $commande->id]) }}" class="btn-secondary" style="background: var(--warning); color: white; border: none;">📦 Saisir Réception (PV)</a>
             @else
                 <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-secondary">📄 Imprimer (Brouillon)</a>
             @endif
