@@ -80,49 +80,15 @@
     @endif
 
     @if(Auth::user()->role === 'service')
-    <!-- SERVICE MANAGER DASHBOARD -->
-    
-    <!-- Besoins Statistics -->
-    @if(isset($data['besoins_stats']))
-    <div class="card" style="margin-bottom: 2rem;">
-        <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; font-weight: 600;">Mes Besoins Exprimés</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-            <div style="text-align: center; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">{{ $data['besoins_stats']['total'] }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Total Besoins</div>
-            </div>
-            <div style="text-align: center; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--slate-900);">{{ $data['besoins_stats']['total_quantite'] }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Quantité Totale</div>
-            </div>
-            <div style="text-align: center; padding: 1rem; background: var(--warning-light); border-radius: 0.5rem;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">{{ $data['besoins_stats']['cree'] }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">En attente</div>
-            </div>
-            <div style="text-align: center; padding: 1rem; background: var(--success-light); border-radius: 0.5rem;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">{{ $data['besoins_stats']['valide'] }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Validés</div>
-            </div>
-            <div style="text-align: center; padding: 1rem; background: var(--danger-light); border-radius: 0.5rem;">
-                <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">{{ $data['besoins_stats']['rejete'] }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-muted);">Rejetés</div>
-            </div>
-        </div>
-    </div>
-    @endif
-
     <!-- Budget info for service heads simplified to hide amounts -->
     <div class="card" style="margin-bottom: 2rem; padding: 2.5rem; text-align: center;">
-        <h3 style="margin-bottom: 1rem; color: var(--slate-800);">Gestion des Activités Budgétaires</h3>
+        <h3 style="margin-bottom: 1rem; color: var(--slate-800);">Tableau de bord - Chef de Service</h3>
         <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 2rem auto;">
-            En tant que Chef de Service, vous pouvez exprimer vos besoins en spécifiant les articles et quantités nécessaires. L'administration se chargera de l'arbitrage financier.
+            Bienvenue sur votre espace de suivi budgétaire. Vous pouvez suivre l'exécution de votre budget.
         </p>
         <div style="display: flex; justify-content: center; gap: 1rem;">
-            <a href="{{ route('besoins.create') }}" class="btn-primary" style="text-decoration: none; padding: 0.75rem 2rem;">
-                Exprimer un nouveau besoin
-            </a>
-            <a href="{{ route('besoins.index') }}" class="btn-secondary" style="text-decoration: none; padding: 0.75rem 2rem;">
-                Suivi de mes demandes
+            <a href="{{ route('execution.index') }}" class="btn-primary" style="text-decoration: none; padding: 0.75rem 2rem;">
+                Voir mon exécution budgétaire
             </a>
         </div>
     </div>
@@ -289,13 +255,9 @@
             <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; font-weight: 600;">Accès Rapide</h3>
             <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                 @if(Auth::user()->role === 'service')
-                    <a href="{{ route('besoins.create') }}" class="btn-primary"
-                        style="text-align: center; text-decoration: none;">Exprimer un besoin</a>
-                    <a href="{{ route('execution.index') }}" class="btn-secondary"
+                    <a href="{{ route('execution.index') }}" class="btn-primary"
                         style="text-align: center; text-decoration: none; margin-top: 0.5rem;">Mes Dépenses</a>
                 @elseif(Auth::user()->role === 'admin')
-                    <a href="{{ route('budget.arbitrage') }}" class="btn-primary"
-                        style="text-align: center; text-decoration: none;">Arbitrage Budgétaire</a>
                     <a href="{{ route('ajustements.create') }}" class="btn-secondary"
                         style="text-align: center; text-decoration: none; margin-top: 0.5rem;">Faire un virement</a>
                     <a href="{{ route('reporting.global') }}" class="btn-secondary"

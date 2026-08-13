@@ -5,12 +5,13 @@
 @section('content')
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <h2>📄 Bons d'Engagement</h2>
+        <a href="{{ route('engagements.create-direct') }}" class="btn-primary" style="text-decoration:none;">+ Engagement Direct</a>
     </div>
 
     @if($engagements->isEmpty())
         <div class="card" style="text-align: center; padding: 3rem;">
             <p style="color: var(--text-muted);">Aucun engagement pour le moment.</p>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">Les engagements sont créés automatiquement lors de la validation des commandes.</p>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Les engagements sont générés lors de la validation des commandes ou créés directement.</p>
         </div>
     @else
         <div class="card">

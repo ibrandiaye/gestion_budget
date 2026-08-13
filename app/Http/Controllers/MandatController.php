@@ -14,7 +14,7 @@ class MandatController extends Controller
         $query = Mandat::with(['engagement.commande.compte', 'engagement.commande.service'])
             ->orderByDesc('created_at');
 
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'directeur' && Auth::user()->role !== 'comptable') {
+        if (Auth::user()->role === 'service') {
             $query->whereHas('engagement.commande', function ($q) {
                 $q->where('service_id', Auth::user()->service_id);
             });

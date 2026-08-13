@@ -72,12 +72,6 @@
         <div>
             <h4 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem; font-weight: 600;">📥 Exports CSV</h4>
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <a href="{{ route('export.besoins.service') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
-                    📥 Besoins par Service
-                </a>
-                <a href="{{ route('export.besoins.compte') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
-                    📥 Besoins par Compte
-                </a>
                 <a href="{{ route('export.budget.service') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.9rem;">
                     📥 Budget par Service
                 </a>

@@ -30,7 +30,8 @@
                             <option value="">Sélectionner un compte...</option>
                             @foreach($comptes as $compte)
                                 <option value="{{ $compte->id }}" 
-                                    data-fournisseur-requis="{{ $compte->fournisseur_requis ? '1' : '0' }}">
+                                    data-fournisseur-requis="{{ $compte->fournisseur_requis ? '1' : '0' }}"
+                                    data-articles="{{ json_encode($compte->articles) }}">
                                     {{ $compte->numero }} - {{ $compte->libelle }}
                                 </option>
                             @endforeach
@@ -45,7 +46,7 @@
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div>
-                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Source *</label>
+                        <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">A partir de  *</label>
                         <select name="source" id="sourceSelect" required onchange="toggleSource()"
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                             <option value="Facture Pro-forma">Facture Pro-forma</option>
@@ -55,16 +56,21 @@
                     </div>
                     <div id="marcheContainer" style="display: none;">
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Marché lié *</label>
-                        <select name="marche_id" id="marcheSelect"
+                        <select name="marche_id" id="marcheSelect" onchange="showMarcheDetails()"
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                             <option value="">Sélectionner un marché...</option>
                             @foreach($marches ?? [] as $marche)
-                                <option value="{{ $marche->id }}">{{ $marche->numero ?? $marche->intitule }}</option>
+                                <option value="{{ $marche->id }}" data-details="{{ json_encode($marche) }}">{{ $marche->numero ?? $marche->intitule }}</option>
                             @endforeach
                         </select>
+                        
+                        <div id="marcheDetails" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--slate-50); border: 1px solid var(--border-color); border-radius: 0.5rem; font-size: 0.9rem;">
+                            <!-- details injected via JS -->
+                        </div>
                     </div>
                 </div>
 
+                <div id="fournisseurMainWrapper">
                 <div id="fournisseurSection" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                     <div>
                         <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">
@@ -112,6 +118,7 @@
                         </div>
                     </div>
                 </div>
+                </div>
 
                 <div id="articlesSection">
                     <div style="margin-bottom: 1.5rem;">
@@ -143,7 +150,7 @@
 
     <script>
         let articleCount = 0;
-        let currentFournisseurArticles = [];
+        let currentCompteArticles = [];
         let selectedCompteId = null;
         let fournisseurRequis = true;
 
@@ -156,11 +163,60 @@
             if (source === 'Marché') {
                 marcheContainer.style.display = 'block';
                 articlesSection.style.display = 'none';
+                document.getElementById('fournisseurMainWrapper').style.display = 'none';
+                document.getElementById('fournisseurSelect').removeAttribute('required');
                 marcheSelect.required = true;
             } else {
                 marcheContainer.style.display = 'none';
                 articlesSection.style.display = 'block';
+                document.getElementById('fournisseurMainWrapper').style.display = 'block';
+                if (fournisseurRequis && selectedCompteId) {
+                    document.getElementById('fournisseurSelect').setAttribute('required', 'required');
+                }
                 marcheSelect.required = false;
+            }
+        }
+
+        function showMarcheDetails() {
+            const select = document.getElementById('marcheSelect');
+            const detailsDiv = document.getElementById('marcheDetails');
+            const option = select.options[select.selectedIndex];
+            
+            if (!option.value) {
+                detailsDiv.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const marche = JSON.parse(option.getAttribute('data-details'));
+                const fournisseur = marche.fournisseur ? marche.fournisseur.nom : 'Non défini';
+                const montant = new Intl.NumberFormat().format(marche.montant) + ' FCFA';
+                
+                let articlesHtml = '<ul style="margin-top: 0.5rem; padding-left: 1.5rem; color: var(--slate-600);">';
+                if (marche.articles && marche.articles.length > 0) {
+                    marche.articles.forEach(art => {
+                        articlesHtml += `<li>${art.designation} - ${art.quantite} x ${new Intl.NumberFormat().format(art.prix_unitaire)} FCFA</li>`;
+                    });
+                } else {
+                    articlesHtml += '<li>Aucun article enregistré</li>';
+                }
+                articlesHtml += '</ul>';
+
+                detailsDiv.innerHTML = `
+                    <div style="font-weight: 600; margin-bottom: 0.5rem; color: var(--slate-800);">${marche.intitule}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <div><span style="color: var(--text-muted);">Fournisseur:</span> <strong>${fournisseur}</strong></div>
+                        <div><span style="color: var(--text-muted);">Montant total:</span> <strong>${montant}</strong></div>
+                    </div>
+                    <div>
+                        <span style="color: var(--text-muted);">Articles:</span>
+                        ${articlesHtml}
+                    </div>
+                `;
+                detailsDiv.style.display = 'block';
+            } catch (e) {
+                console.error('Erreur parsing marche details:', e);
+                detailsDiv.style.display = 'none';
             }
         }
 
@@ -180,6 +236,9 @@
                 document.getElementById('sansFournisseurSection').style.display = 'none';
                 return;
             }
+            
+            // Load articles for the selected compte
+            currentCompteArticles = JSON.parse(compteOption.getAttribute('data-articles') || '[]');
 
             // Check if fournisseur is required for this compte
             fournisseurRequis = compteOption.getAttribute('data-fournisseur-requis') === '1';
@@ -227,13 +286,11 @@
             articleCount = 0;
             
             if (!option.value) {
-                currentFournisseurArticles = [];
                 document.getElementById('fournisseurNom').value = '';
                 return;
             }
 
             document.getElementById('fournisseurNom').value = option.getAttribute('data-nom');
-            currentFournisseurArticles = JSON.parse(option.getAttribute('data-articles') || '[]');
             
             // Add first article line
             addArticleLine();
@@ -248,77 +305,42 @@
             div.id = 'article-line-' + index;
             div.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 0.5rem; align-items: end; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;';
 
-            if (fournisseurRequis && currentFournisseurArticles.length > 0) {
-                // Mode avec fournisseur - select articles
-                let articleOptions = '<option value="">Choisir article...</option>';
-                currentFournisseurArticles.forEach(a => {
-                    articleOptions += `<option value="${a.id}" data-designation="${a.designation}" data-prix="${a.pivot.prix}">${a.designation} (${new Intl.NumberFormat().format(a.pivot.prix)} FCFA)</option>`;
-                });
+            let articleOptions = '<option value="">Choisir article...</option>';
+            currentCompteArticles.forEach(a => {
+                articleOptions += `<option value="${a.id}" data-designation="${a.designation}">${a.designation}</option>`;
+            });
 
-                div.innerHTML = `
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Article *</label>
-                        <select name="articles[${index}][article_id]" onchange="selectArticle(this)" class="article-select"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
-                            ${articleOptions}
-                        </select>
-                        <input type="hidden" name="articles[${index}][designation]" class="designation-hidden">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Conditionnement</label>
-                        <input type="text" name="articles[${index}][conditionnement]" placeholder="ex: 38 unités"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Quantité *</label>
-                        <input type="number" name="articles[${index}][quantite]" required min="1" value="1" onchange="calculateTotal()" class="qte-input"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: center;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Prix Unitaire *</label>
-                        <input type="number" name="articles[${index}][prix_unitaire]" required min="0" value="0" onchange="calculateTotal()" class="prix-input"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Montant HT</label>
-                        <input type="text" class="montant-display" readonly value="0 FCFA"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right; background: var(--slate-100);">
-                    </div>
-                    <button type="button" onclick="removeArticleLine(${index})" 
-                        style="background: #fee2e2; color: #b91c1c; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer;">🗑️</button>
-                `;
-            } else {
-                // Mode sans fournisseur - saisie libre
-                div.innerHTML = `
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Désignation *</label>
-                        <input type="text" name="articles[${index}][designation]" required placeholder="Ex: Salaire janvier"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Conditionnement</label>
-                        <input type="text" name="articles[${index}][conditionnement]" placeholder="optionnel"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Quantité *</label>
-                        <input type="number" name="articles[${index}][quantite]" required min="1" value="1" onchange="calculateTotal()" class="qte-input"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: center;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Prix Unitaire *</label>
-                        <input type="number" name="articles[${index}][prix_unitaire]" required min="0" value="0" onchange="calculateTotal()" class="prix-input"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Montant HT</label>
-                        <input type="text" class="montant-display" readonly value="0 FCFA"
-                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right; background: var(--slate-100);">
-                    </div>
-                    <button type="button" onclick="removeArticleLine(${index})" 
-                        style="background: #fee2e2; color: #b91c1c; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer;">🗑️</button>
-                `;
-            }
+            div.innerHTML = `
+                <div>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Article *</label>
+                    <select name="articles[${index}][article_id]" required class="article-select"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                        ${articleOptions}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Conditionnement</label>
+                    <input type="text" name="articles[${index}][conditionnement]" placeholder="ex: 38 unités"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Quantité *</label>
+                    <input type="number" name="articles[${index}][quantite]" required min="1" value="1" onchange="calculateTotal()" class="qte-input"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: center;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Prix Unitaire *</label>
+                    <input type="number" name="articles[${index}][prix_unitaire]" required min="0" value="0" onchange="calculateTotal()" class="prix-input"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Montant HT</label>
+                    <input type="text" class="montant-display" readonly value="0 FCFA"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right; background: var(--slate-100);">
+                </div>
+                <button type="button" onclick="removeArticleLine(${index})" 
+                    style="background: #fee2e2; color: #b91c1c; border: none; padding: 0.5rem; border-radius: 4px; cursor: pointer;">🗑️</button>
+            `;
 
             container.appendChild(div);
             calculateTotal();

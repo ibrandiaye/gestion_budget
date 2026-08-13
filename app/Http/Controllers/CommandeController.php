@@ -19,7 +19,7 @@ class CommandeController extends Controller
         $query = Commande::with(['compte', 'service', 'articles'])
             ->orderByDesc('created_at');
 
-        if (Auth::user()->role !== 'admin') {
+        if (Auth::user()->role === 'service') {
             $query->where('service_id', Auth::user()->service_id);
         }
 
@@ -36,7 +36,7 @@ class CommandeController extends Controller
             ->get();
         
         $budget = Budget::whereIn('statut', ['brouillon', 'actif'])->latest('annee')->first();
-        $marches = \App\Models\Marche::all();
+        $marches = \App\Models\Marche::with(['fournisseur', 'articles'])->get();
 
         return view('commandes.create', compact('comptes', 'budget', 'marches'));
     }
@@ -53,7 +53,7 @@ class CommandeController extends Controller
             'source' => 'required|string|in:Marché,Facture Pro-forma,Autre',
             'marche_id' => 'nullable|exists:marches,id|required_if:source,Marché',
             'articles' => 'required_unless:source,Marché|array',
-            'articles.*.designation' => 'required_with:articles|string|max:191',
+            'articles.*.article_id' => 'required_with:articles|exists:articles,id',
             'articles.*.conditionnement' => 'nullable|string|max:100',
             'articles.*.quantite' => 'required_with:articles|integer|min:1',
             'articles.*.prix_unitaire' => 'required_with:articles|numeric|min:0',
@@ -67,8 +67,13 @@ class CommandeController extends Controller
 
         // Resolve articles if source is Marché
         $articlesSource = $request->articles;
+        $fournisseurNom = $request->fournisseur;
+        
         if ($request->source === 'Marché') {
-            $marche = \App\Models\Marche::with('articles')->find($request->marche_id);
+            $marche = \App\Models\Marche::with(['articles', 'fournisseur'])->find($request->marche_id);
+            if ($marche && $marche->fournisseur) {
+                $fournisseurNom = $marche->fournisseur->nom;
+            }
             $articlesSource = $marche->articles->map(function($art) {
                 return [
                     'designation' => $art->designation,
@@ -93,10 +98,14 @@ class CommandeController extends Controller
         $dotation = $compte->getDotationForBudget($budget->id);
         
         // Calculer le total déjà engagé sur ce compte pour ce budget (tous services confondus)
-        // On regarde les engagements liés à des commandes de ce budget et ce compte
-        $totalEngageCompte = Engagement::whereHas('commande', function($q) use ($budget, $request) {
-            $q->where('budget_id', $budget->id)
-              ->where('compte_id', $request->compte_id);
+        $totalEngageCompte = Engagement::where(function($query) use ($budget, $request) {
+            $query->where(function($q) use ($budget, $request) {
+                $q->where('budget_id', $budget->id)
+                  ->where('compte_id', $request->compte_id);
+            })->orWhereHas('commande', function($q) use ($budget, $request) {
+                $q->where('budget_id', $budget->id)
+                  ->where('compte_id', $request->compte_id);
+            });
         })->sum('montant');
         
         $disponible = $dotation - $totalEngageCompte;
@@ -113,14 +122,14 @@ class CommandeController extends Controller
             $fichierPath = $request->file('fichier')->store('commandes', 'public');
         }
 
-        DB::transaction(function () use ($request, $budget, $montantTotal, $fichierPath) {
+        DB::transaction(function () use ($request, $budget, $montantTotal, $fichierPath, $fournisseurNom, $articlesSource) {
             $commande = Commande::create([
                 'numero' => Commande::generateNumero(),
                 'date' => $request->date,
                 'compte_id' => $request->compte_id,
                 'service_id' => Auth::user()->service_id,
                 'budget_id' => $budget->id,
-                'fournisseur' => $request->fournisseur,
+                'fournisseur' => $fournisseurNom,
                 'reference' => $request->reference,
                 'source' => $request->source,
                 'marche_id' => $request->source === 'Marché' ? $request->marche_id : null,
@@ -132,10 +141,18 @@ class CommandeController extends Controller
             ]);
 
             foreach ($articlesSource as $art) {
+                $designation = $art['designation'] ?? '';
+                if (empty($designation) && !empty($art['article_id'])) {
+                    $articleModel = \App\Models\Article::find($art['article_id']);
+                    if ($articleModel) {
+                        $designation = $articleModel->designation;
+                    }
+                }
+
                 CommandeArticle::create([
                     'commande_id' => $commande->id,
                     'article_id' => $art['article_id'] ?? null,
-                    'designation' => $art['designation'],
+                    'designation' => $designation,
                     'conditionnement' => $art['conditionnement'] ?? null,
                     'quantite' => $art['quantite'],
                     'prix_unitaire' => $art['prix_unitaire'],
@@ -237,6 +254,9 @@ class CommandeController extends Controller
         Engagement::create([
             'numero' => Engagement::generateNumero(),
             'commande_id' => $commande->id,
+            'compte_id' => $commande->compte_id,
+            'service_id' => $commande->service_id,
+            'budget_id' => $commande->budget_id,
             'date' => now()->toDateString(),
             'objet' => $commande->articles->first()->designation ?? 'Commande ' . $commande->numero,
             'nature' => $commande->compte->compteParent->type ?? 'Fonctionnement',

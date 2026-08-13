@@ -27,8 +27,8 @@ class DashboardController extends Controller
             'total_disponible' => 0,
             'taux_execution' => 0,
             'top_services' => [],
-            // Total budget based on dotation_initiale for the active budget
-            'total_dotation' => $budget ? \DB::table('dotations_comptes')->where('budget_id', $budget->id)->sum('dotation_initiale') : 0,
+            // Total budget based on LigneBudget for the active budget (for compatibility in views if needed)
+            'total_dotation' => $budget ? \App\Models\LigneBudget::where('budget_id', $budget->id)->sum('montant_alloue') : 0,
         ];
 
         if ($budget) {
@@ -82,16 +82,10 @@ class DashboardController extends Controller
 
                 $data['total_alloue'] = $lignes->sum('montant_alloue');
                 $data['total_engage'] = $lignes->sum('montant_engage');
-               // $data['total_disponible'] = $data['total_alloue'] - $data['total_engage'];
-               $data['total_disponible'] = $data['total_dotation'] - $data['total_engage'];
+                $data['total_disponible'] = $data['total_alloue'] - $data['total_engage'];
 
-               /*  if ($data['total_alloue'] > 0) {
+                if ($data['total_alloue'] > 0) {
                     $data['taux_execution'] = round(($data['total_engage'] / $data['total_alloue']) * 100, 1);
-                } 
-                */
-
-                if ($data['total_dotation'] > 0) {
-                    $data['taux_execution'] = round(($data['total_engage'] / $data['total_dotation']) * 100, 1);
                 }
 
                 // Top Services by Engagement

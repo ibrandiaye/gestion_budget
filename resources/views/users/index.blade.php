@@ -89,13 +89,9 @@
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Rôle</label>
                     <select name="role" required
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                        <option value="service">Chef de Service</option>
-                        <option value="controleur">Contrôleur</option>
-                        <option value="approvisionnement">Agent Approvisionnement</option>
-                        <option value="saf">Chef SAF</option>
-                        <option value="comptable_matiere_principal">Comptable Matière Principal</option>
-                        <option value="comptable_matiere_auxiliaire">Comptable Matière Auxiliaire</option>
-                        <option value="admin">Administrateur</option>
+                        @foreach($roles as $role)
+                            <option value="{{ $role->name }}">{{ $role->display_name }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -154,13 +150,9 @@
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Rôle</label>
                     <select id="edit_role" name="role" required
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                        <option value="service">Chef de Service</option>
-                        <option value="controleur">Contrôleur</option>
-                        <option value="approvisionnement">Agent Approvisionnement</option>
-                        <option value="saf">Chef SAF</option>
-                        <option value="comptable_matiere_principal">Comptable Matière Principal</option>
-                        <option value="comptable_matiere_auxiliaire">Comptable Matière Auxiliaire</option>
-                        <option value="admin">Administrateur</option>
+                        @foreach($roles as $role)
+                            <option value="{{ $role->name }}">{{ $role->display_name }}</option>
+                        @endforeach
                     </select>
                 </div>
 

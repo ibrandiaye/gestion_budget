@@ -12,11 +12,16 @@ class ExecutionController extends Controller
 {
     public function index()
     {
+        $budget = \App\Models\Budget::where('statut', 'actif')->first();
         $query = LigneBudget::with(['compte', 'service', 'budget', 'compte.articles' => function($q) {
             $q->where('actif', true);
         }]);
 
-        if (Auth::check() && Auth::user()->role !== 'admin') {
+        if ($budget) {
+            $query->where('budget_id', $budget->id);
+        }
+
+        if (Auth::check() && Auth::user()->role === 'service') {
             $query->where('service_id', Auth::user()->service_id);
         }
 
@@ -121,7 +126,7 @@ class ExecutionController extends Controller
             ->orderByDesc('date')
             ->orderByDesc('created_at');
 
-        if (Auth::user()->role !== 'admin') {
+        if (Auth::user()->role === 'service') {
             $query->whereHas('ligneBudget', function ($q) {
                 $q->where('service_id', Auth::user()->service_id);
             });
@@ -137,7 +142,7 @@ class ExecutionController extends Controller
         $execution->load(['ligneBudget.compte', 'ligneBudget.service', 'ligneBudget.budget', 'details.article']);
         
         // Authorization check
-        if (Auth::user()->role !== 'admin' && Auth::user()->service_id !== $execution->ligneBudget->service_id) {
+        if (Auth::user()->role === 'service' && Auth::user()->service_id !== $execution->ligneBudget->service_id) {
             abort(403, "Vous n'êtes pas autorisé à voir cette facture.");
         }
 

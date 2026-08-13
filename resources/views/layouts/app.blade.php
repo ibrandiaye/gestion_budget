@@ -31,83 +31,117 @@
                 <a href="{{ url('/') }}" class="nav-item {{ request()->is('/') ? 'active' : '' }}">
                     <span class="icon">📊</span> Tableau de bord
                 </a>
-                @if(Auth::user()->role === 'admin')
-                <a href="{{ route('reporting.global') }}" class="nav-item {{ request()->routeIs('reporting.*') ? 'active' : '' }}">
+                @if(Auth::user()->can('reporting.view') || Auth::user()->role === 'admin')
+                <a href="{{ route('reporting.global') }}" class="nav-item {{ request()->routeIs('reporting.*') && !request()->routeIs('reporting.accounts') ? 'active' : '' }}">
                     <span class="icon">📈</span> Reporting
                 </a>
                 @endif
 
                 <div class="nav-section">Budget</div>
-                <a href="{{ route('besoins.index') }}" class="nav-item {{ request()->routeIs('besoins.*') ? 'active' : '' }}">
-                    <span class="icon">📝</span> Besoins
-                </a>
-              
-                @if(Auth::check() && Auth::user()->role === 'admin')
-                <a href="{{ route('budget.arbitrage') }}" class="nav-item {{ request()->routeIs('budget.arbitrage') ? 'active' : '' }}">
-                    <span class="icon">⚖️</span> Arbitrage
-                </a>
+               
+                @if(Auth::user()->can('reporting.view') || Auth::user()->role === 'admin')
                  <a href="{{ route('reporting.accounts') }}" class="nav-item {{ request()->routeIs('reporting.accounts') ? 'active' : '' }}">
                     <span class="icon">📊</span> Par Compte
                 </a>
+                @endif
                
+                @if(Auth::user()->can('budget.ajustement') || Auth::user()->role === 'admin')
                 <a href="{{ route('ajustements.index') }}" class="nav-item {{ request()->routeIs('ajustements.*') ? 'active' : '' }}">
                     <span class="icon">↔️</span> Virements
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('execution.view') || Auth::user()->role === 'admin')
                 <a href="{{ route('execution.index') }}" class="nav-item {{ request()->routeIs('execution.*') ? 'active' : '' }}">
                     <span class="icon">💸</span> Exécution
                 </a>
+                @endif
 
                 <div class="nav-section">Dépenses</div>
+                @if(Auth::user()->can('marches.view') || Auth::user()->role === 'admin')
                 <a href="{{ route('marches.index') }}" class="nav-item {{ request()->routeIs('marches.*') ? 'active' : '' }}">
                     <span class="icon">📝</span> Marchés
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('commandes.view') || Auth::user()->role === 'admin')
                 <a href="{{ route('commandes.index') }}" class="nav-item {{ request()->routeIs('commandes.*') ? 'active' : '' }}">
                     <span class="icon">📋</span> Commandes
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('pv_receptions.view') || Auth::user()->role === 'admin')
                 <a href="{{ route('pv-receptions.index') }}" class="nav-item {{ request()->routeIs('pv-receptions.*') ? 'active' : '' }}">
                     <span class="icon">📦</span> PV Réceptions
                 </a>
+                @endif
+
+                @if(Auth::user()->role === 'admin')
+                <a href="{{ route('signataires.index') }}" class="nav-item {{ request()->routeIs('signataires.*') ? 'active' : '' }}">
+                    <span class="icon">✍️</span> Signataires
+                </a>
+                @endif
+                
+                @if(Auth::user()->can('engagements.view') || Auth::user()->role === 'admin')
                 <a href="{{ route('engagements.index') }}" class="nav-item {{ request()->routeIs('engagements.*') ? 'active' : '' }}">
                     <span class="icon">📄</span> Engagements
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('mandats.view') || Auth::user()->role === 'admin' || Auth::user()->role === 'comptable')
                 <a href="{{ route('mandats.index') }}" class="nav-item {{ request()->routeIs('mandats.*') ? 'active' : '' }}">
                     <span class="icon">💳</span> Mandats
                 </a>
+                @endif
 
-                
+                @if(Auth::user()->can('users.manage') || Auth::user()->can('services.manage') || Auth::user()->can('comptes.manage') || Auth::user()->can('budget.import') || Auth::user()->role === 'admin')
                 <div class="nav-section">Administration</div>
+                @endif
+                
+                @if(Auth::user()->can('users.manage') || Auth::user()->role === 'admin')
                 <a href="{{ route('users.index') }}" class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                     <span class="icon">👥</span> Utilisateurs
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('services.manage') || Auth::user()->role === 'admin')
                 <a href="{{ route('services.index') }}" class="nav-item {{ request()->routeIs('services.*') ? 'active' : '' }}">
                     <span class="icon">🏢</span> Services
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('comptes.manage') || Auth::user()->role === 'admin')
                   <a href="{{ route('compte-parents.index') }}" class="nav-item {{ request()->routeIs('compte-parents.*') ? 'active' : '' }}">
                     <span class="icon">📂</span> Catégories (Parents)
                 </a>
                 <a href="{{ route('comptes.index') }}" class="nav-item {{ request()->routeIs('comptes.*') ? 'active' : '' }}">
                     <span class="icon">📑</span> Comptes
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('articles.manage') || Auth::user()->role === 'admin')
                 <a href="{{ route('articles.index') }}" class="nav-item {{ request()->routeIs('articles.*') ? 'active' : '' }}">
                     <span class="icon">📦</span> Articles
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('fournisseurs.manage') || Auth::user()->role === 'admin')
                 <a href="{{ route('fournisseurs.index') }}" class="nav-item {{ request()->routeIs('fournisseurs.*') ? 'active' : '' }}">
                     <span class="icon">🏪</span> Fournisseurs
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('permissions.manage') || Auth::user()->role === 'admin')
                 <a href="{{ route('permissions.index') }}" class="nav-item {{ request()->routeIs('permissions.*') ? 'active' : '' }}">
                     <span class="icon">🔐</span> Permissions
                 </a>
+                @endif
+                
+                @if(Auth::user()->can('budget.import') || Auth::user()->role === 'admin')
                  <a href="{{ route('budgets.index') }}" class="nav-item {{ request()->routeIs('budgets.*') ? 'active' : '' }}">
                     <span class="icon">📅</span> Exercices
                 </a>
                 @endif
-
-                @if(Auth::user()->role === 'comptable')
-                 <a href="{{ route('mandats.index') }}" class="nav-item {{ request()->routeIs('mandats.*') ? 'active' : '' }}">
-                    <span class="icon">💳</span> Mandats
-                </a>
-                @endif
-               
             </nav>
 
             <div class="user-profile">

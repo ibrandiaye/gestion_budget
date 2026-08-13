@@ -16,6 +16,11 @@ class Budget extends Model
         return $this->hasMany(LigneBudget::class);
     }
 
+    public function lignes()
+    {
+        return $this->hasMany(LigneBudget::class);
+    }
+
     public function ajustements()
     {
         return $this->hasMany(Ajustement::class);

@@ -120,7 +120,7 @@
 
         <div class="info-grid">
             <div class="info-box">
-                <p><strong>{{ $commande->caisse }}</strong></p>
+                <!-- <p><strong>{{-- $commande->caisse --}}</strong></p> -->
                 <p>Références: {{ $commande->reference ?? '-' }}</p>
                 <p>Fournisseur: {{ $commande->fournisseur ?? '-' }}</p>
             </div>

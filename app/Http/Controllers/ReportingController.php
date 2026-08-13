@@ -17,10 +17,14 @@ class ReportingController extends Controller
     {
         $user = auth()->user();
 
+        $budget = \App\Models\Budget::where('statut', 'actif')->first();
+
         // Check if user is a service manager
         if ($user->role === 'service' && $user->service_id) {
             // SERVICE MANAGER VIEW - Filter by their service
-            $lignes = LigneBudget::where('service_id', $user->service_id)->get();
+            $lignes = LigneBudget::where('service_id', $user->service_id)
+                ->when($budget, fn($q) => $q->where('budget_id', $budget->id))
+                ->get();
 
             $totalAlloue = $lignes->sum('montant_alloue');
             $totalEngage = $lignes->sum('montant_engage');
@@ -28,6 +32,7 @@ class ReportingController extends Controller
 
             // Budget lines by account for this service
             $statsComptes = LigneBudget::where('service_id', $user->service_id)
+                ->when($budget, fn($q) => $q->where('budget_id', $budget->id))
                 ->select('compte_id', DB::raw('SUM(montant_alloue) as total_alloue'), DB::raw('SUM(montant_engage) as total_engage'))
                 ->with('compte')
                 ->groupBy('compte_id')
@@ -39,6 +44,7 @@ class ReportingController extends Controller
 
             // Top budget lines for this service
             $topLignes = LigneBudget::where('service_id', $user->service_id)
+                ->when($budget, fn($q) => $q->where('budget_id', $budget->id))
                 ->with(['compte'])
                 ->orderByDesc('montant_engage')
                 ->take(5)
@@ -48,12 +54,13 @@ class ReportingController extends Controller
 
         } else {
             // ADMIN VIEW - Global statistics
-            $totalAlloue = LigneBudget::sum('montant_alloue');
-            $totalEngage = LigneBudget::sum('montant_engage');
+            $totalAlloue = LigneBudget::when($budget, fn($q) => $q->where('budget_id', $budget->id))->sum('montant_alloue');
+            $totalEngage = LigneBudget::when($budget, fn($q) => $q->where('budget_id', $budget->id))->sum('montant_engage');
             $tauxExecution = $totalAlloue > 0 ? ($totalEngage / $totalAlloue) * 100 : 0;
 
             // Par Service
-            $statsServices = LigneBudget::select(
+            $statsServices = LigneBudget::when($budget, fn($q) => $q->where('budget_id', $budget->id))
+                ->select(
                 'service_id',
                 DB::raw('SUM(montant_alloue) as total_alloue'),
                 DB::raw('SUM(montant_engage) as total_engage')
@@ -67,7 +74,8 @@ class ReportingController extends Controller
                 });
 
             // Top Dépenses (Lignes avec le plus fort engagement)
-            $topLignes = LigneBudget::with(['compte', 'service'])
+            $topLignes = LigneBudget::when($budget, fn($q) => $q->where('budget_id', $budget->id))
+                ->with(['compte', 'service'])
                 ->orderByDesc('montant_engage')
                 ->take(5)
                 ->get();
@@ -183,8 +191,10 @@ class ReportingController extends Controller
 
     public function exportBudgetByService()
     {
+        $budget = \App\Models\Budget::where('statut', 'actif')->first();
         $headers = ['Service', 'Montant Affecté', 'Total Engage', 'Taux Execution'];
         $data = LigneBudget::with('service')
+            ->when($budget, fn($q) => $q->where('budget_id', $budget->id))
             ->select('service_id', DB::raw('SUM(montant_alloue) as alloue'), DB::raw('SUM(montant_engage) as engage'))
             ->groupBy('service_id')
             ->get()

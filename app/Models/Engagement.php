@@ -12,6 +12,9 @@ class Engagement extends Model
     protected $fillable = [
         'numero',
         'commande_id',
+        'compte_id',
+        'service_id',
+        'budget_id',
         'date',
         'objet',
         'nature',
@@ -76,5 +79,20 @@ class Engagement extends Model
     public function mandat()
     {
         return $this->hasOne(Mandat::class);
+    }
+
+    public function compte()
+    {
+        return $this->belongsTo(Compte::class);
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
+    }
+
+    public function budget()
+    {
+        return $this->belongsTo(Budget::class);
     }
 }

@@ -18,6 +18,7 @@ use App\Http\Controllers\EngagementController;
 use App\Http\Controllers\MandatController;
 use App\Http\Controllers\FournisseurController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\SignataireController;
 use App\Http\Controllers\MarcheController;
 use App\Http\Controllers\PvReceptionController;
 
@@ -79,21 +80,19 @@ Route::middleware('auth')->group(function () {
     // Annual Budgets (Admin Only)
     Route::get('/budgets', [BudgetYearController::class, 'index'])->name('budgets.index');
     Route::post('/budgets', [BudgetYearController::class, 'store'])->name('budgets.store');
+    Route::get('/budgets/template', [BudgetYearController::class, 'downloadTemplate'])->name('budgets.template');
+    Route::post('/budgets/import', [BudgetYearController::class, 'import'])->name('budgets.import');
     Route::post('/budgets/{budget}/activate', [BudgetYearController::class, 'activate'])->name('budgets.activate');
+    Route::get('/budgets/{budget}', [BudgetYearController::class, 'show'])->name('budgets.show');
 
     // Adjustments (Virements)
     Route::get('/ajustements', [AjustementController::class, 'index'])->name('ajustements.index');
     Route::get('/ajustements/creer', [AjustementController::class, 'create'])->name('ajustements.create');
     Route::post('/ajustements', [AjustementController::class, 'store'])->name('ajustements.store');
 
-    // Besoins
-    Route::get('/besoins', [BesoinController::class, 'index'])->name('besoins.index');
-    Route::get('/besoins/creer', [BesoinController::class, 'create'])->name('besoins.create');
-    Route::post('/besoins', [BesoinController::class, 'store'])->name('besoins.store');
 
-    // Budget Arbitrage (Admin only in real app, simplified here)
-    Route::get('/budget/arbitrage', [BudgetController::class, 'arbitrage'])->name('budget.arbitrage');
-    Route::post('/budget/arbitrage', [BudgetController::class, 'valider'])->name('budget.valider');
+
+
 
     // Execution
     Route::get('/execution/historique', [ExecutionController::class, 'history'])->name('execution.history');
@@ -118,12 +117,23 @@ Route::middleware('auth')->group(function () {
     // Permissions Management
     Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
     Route::put('/permissions/{role}', [PermissionController::class, 'updateRolePermissions'])->name('permissions.update');
+    Route::post('/permissions/roles', [PermissionController::class, 'storeRole'])->name('permissions.store-role');
+    Route::delete('/permissions/roles/{role}', [PermissionController::class, 'destroyRole'])->name('permissions.destroy-role');
+    Route::post('/permissions/permissions', [PermissionController::class, 'storePermission'])->name('permissions.store-permission');
+    Route::delete('/permissions/permissions/{permission}', [PermissionController::class, 'destroyPermission'])->name('permissions.destroy-permission');
 
     // Marchés
     Route::resource('marches', MarcheController::class)->parameters(['marches' => 'marche']);
 
     // PV de Réception
     Route::resource('pv-receptions', PvReceptionController::class);
+
+    // Signataires
+    Route::get('/signataires', [SignataireController::class, 'index'])->name('signataires.index');
+    Route::post('/signataires', [SignataireController::class, 'store'])->name('signataires.store');
+    Route::put('/signataires/{signataire}', [SignataireController::class, 'update'])->name('signataires.update');
+    Route::patch('/signataires/{signataire}/toggle', [SignataireController::class, 'toggleActif'])->name('signataires.toggle');
+    Route::delete('/signataires/{signataire}', [SignataireController::class, 'destroy'])->name('signataires.destroy');
 
     // Commandes
     Route::get('/commandes', [CommandeController::class, 'index'])->name('commandes.index');
@@ -139,6 +149,8 @@ Route::middleware('auth')->group(function () {
 
     // Engagements
     Route::get('/engagements', [EngagementController::class, 'index'])->name('engagements.index');
+    Route::get('/engagements/create-direct', [EngagementController::class, 'createDirect'])->name('engagements.create-direct');
+    Route::post('/engagements/direct', [EngagementController::class, 'storeDirect'])->name('engagements.store-direct');
     Route::get('/engagements/{engagement}', [EngagementController::class, 'show'])->name('engagements.show');
     Route::post('/engagements/{engagement}/valider', [EngagementController::class, 'valider'])->name('engagements.valider');
     Route::post('/engagements/{engagement}/rejeter', [EngagementController::class, 'rejeter'])->name('engagements.rejeter');

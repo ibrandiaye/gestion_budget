@@ -19,7 +19,7 @@ class MarcheController extends Controller
 
     public function create()
     {
-        $comptes = Compte::all();
+        $comptes = Compte::with(['articles' => fn($q) => $q->where('actif', true)])->get();
         $budgets = Budget::all();
         $fournisseurs = Fournisseur::all();
         return view('marches.create', compact('comptes', 'budgets', 'fournisseurs'));
@@ -37,13 +37,19 @@ class MarcheController extends Controller
             'montant' => 'required|numeric',
             'fournisseur_id' => 'required|exists:fournisseurs,id',
             'articles' => 'required|array',
-            'articles.*.designation' => 'required|string',
-            'articles.*.quantite' => 'required|integer',
-            'articles.*.prix_unitaire' => 'required|numeric',
+            'articles.*.article_id' => 'required|exists:articles,id',
+            'articles.*.quantite' => 'required|integer|min:1',
+            'articles.*.prix_unitaire' => 'required|numeric|min:0',
         ]);
 
+        // Calculate total amount securely in the backend
+        $montant_calcule = 0;
+        foreach ($request->articles as $art) {
+            $montant_calcule += $art['quantite'] * $art['prix_unitaire'];
+        }
+
         // Deduce Mode de Passation
-        $mode_passation = $this->deduceModePassation($request->type, $request->montant);
+        $mode_passation = $this->deduceModePassation($request->type, $montant_calcule);
 
         $marche = Marche::create([
             'date' => $request->date,
@@ -52,14 +58,17 @@ class MarcheController extends Controller
             'budget_id' => $request->budget_id,
             'nature' => $request->nature,
             'type' => $request->type,
-            'montant' => $request->montant,
+            'montant' => $montant_calcule,
             'mode_passation' => $mode_passation,
             'fournisseur_id' => $request->fournisseur_id,
         ]);
 
         foreach ($request->articles as $art) {
+            $articleModel = \App\Models\Article::find($art['article_id']);
+            $designation = $articleModel ? $articleModel->designation : ($art['designation'] ?? 'Article inconnu');
+
             $marche->articles()->create([
-                'designation' => $art['designation'],
+                'designation' => $designation,
                 'conditionnement' => $art['conditionnement'] ?? null,
                 'quantite' => $art['quantite'],
                 'prix_unitaire' => $art['prix_unitaire'],

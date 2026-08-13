@@ -41,19 +41,22 @@
                 <p><strong>Objet:</strong> {{ $engagement->objet }}</p>
                 <p><strong>Nature:</strong> {{ $engagement->nature ?? '-' }}</p>
                 <p><strong>Fournisseur:</strong> {{ $engagement->nom_fournisseur }}</p>
-                @if($engagement->commande->fichier)
+                @if($engagement->commande && $engagement->commande->fichier)
                     <p><strong>Fichier du Marché:</strong> <a href="{{ asset('storage/' . $engagement->commande->fichier) }}" target="_blank" style="color: var(--primary); text-decoration: underline;">📎 Voir le fichier</a></p>
                 @endif
                 <p><strong>Montant:</strong> <span style="font-size: 1.2rem; font-weight: 700;">{{ number_format($engagement->montant, 0, ',', ' ') }} FCFA</span></p>
             </div>
             <div style="padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;">
                 <h4 style="margin-bottom: 1rem; color: var(--primary-700);">Imputation</h4>
-                <p><strong>Compte:</strong> {{ $engagement->commande->compte->numero ?? '-' }} - {{ $engagement->commande->compte->libelle ?? '-' }}</p>
-                <p><strong>Service:</strong> {{ $engagement->commande->service->nom ?? '-' }}</p>
+                <p><strong>Compte:</strong> {{ $engagement->compte->numero ?? ($engagement->commande->compte->numero ?? '-') }} - {{ $engagement->compte->libelle ?? ($engagement->commande->compte->libelle ?? '-') }}</p>
+                <p><strong>Service:</strong> {{ $engagement->service->nom ?? ($engagement->commande->service->nom ?? '-') }}</p>
+                @if($engagement->commande)
                 <p><strong>Commande:</strong> <a href="{{ route('commandes.show', $engagement->commande) }}">{{ $engagement->commande->numero }}</a></p>
+                @endif
             </div>
         </div>
 
+        @if($engagement->commande)
         <h4 style="margin-bottom: 1rem;">Articles validés</h4>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;">
             <thead>
@@ -75,6 +78,11 @@
                 @endforeach
             </tbody>
         </table>
+        @else
+        <div style="padding: 1rem; background: var(--slate-50); border-radius: 0.5rem; margin-bottom: 1.5rem;">
+            <p style="color: var(--text-muted); text-align: center; margin: 0;">Cet engagement a été créé directement (sans commande associée).</p>
+        </div>
+        @endif
 
         <div style="display: flex; justify-content: flex-end; gap: 1rem;">
             @if($engagement->statut === 'cree')

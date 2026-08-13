@@ -67,10 +67,10 @@
                 
                 <div>
                     <label>Compte d'imputation</label>
-                    <select name="compte_id" required class="form-control">
+                    <select name="compte_id" id="compteSelect" required class="form-control">
                         <option value="">Sélectionnez un compte...</option>
                         @foreach($comptes as $compte)
-                            <option value="{{ $compte->id }}">{{ $compte->numero }} - {{ $compte->libelle }}</option>
+                            <option value="{{ $compte->id }}" data-articles="{{ json_encode($compte->articles) }}">{{ $compte->numero }} - {{ $compte->libelle }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -113,8 +113,8 @@
                 </div>
 
                 <div>
-                    <label>Montant (FCFA)</label>
-                    <input type="number" name="montant" required class="form-control" placeholder="0" min="0">
+                    <label>Montant (FCFA) - Calculé automatiquement</label>
+                    <input type="number" name="montant" id="montant-input" required class="form-control" value="0" readonly style="background: var(--slate-100); font-weight: bold; color: var(--primary);">
                 </div>
             </div>
 
@@ -123,8 +123,10 @@
             <div id="articles-container">
                 <div class="article-row" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 1rem; margin-bottom: 1rem; align-items: end;">
                     <div>
-                        <label>Désignation</label>
-                        <input type="text" name="articles[0][designation]" required class="form-control">
+                        <label>Article</label>
+                        <select name="articles[0][article_id]" required class="form-control article-select">
+                            <option value="">Sélectionnez d'abord un compte...</option>
+                        </select>
                     </div>
                     <div>
                         <label>Conditionnement</label>
@@ -158,18 +160,55 @@
             const rowCount = container.children.length;
             
             const newRow = container.children[0].cloneNode(true);
-            newRow.querySelectorAll('input').forEach(input => {
-                input.name = input.name.replace(/\[0\]/, `[${rowCount}]`);
-                if (input.type !== 'number' || input.name.includes('prix')) input.value = '';
-                if (input.name.includes('quantite')) input.value = '1';
+            newRow.querySelectorAll('input, select').forEach(el => {
+                el.name = el.name.replace(/\[0\]/, `[${rowCount}]`);
+                if (el.tagName === 'INPUT') {
+                    if (el.type !== 'number' || el.name.includes('prix')) el.value = '';
+                    if (el.name.includes('quantite')) el.value = '1';
+                }
             });
             
             newRow.querySelector('.remove-article').style.display = 'block';
             newRow.querySelector('.remove-article').addEventListener('click', function() {
                 this.closest('.article-row').remove();
+                calculateTotal();
             });
             
             container.appendChild(newRow);
+        });
+
+        function calculateTotal() {
+            let total = 0;
+            document.querySelectorAll('.article-row').forEach(row => {
+                const qteInput = row.querySelector('input[name$="[quantite]"]');
+                const prixInput = row.querySelector('input[name$="[prix_unitaire]"]');
+                if (qteInput && prixInput) {
+                    const qte = parseFloat(qteInput.value) || 0;
+                    const prix = parseFloat(prixInput.value) || 0;
+                    total += (qte * prix);
+                }
+            });
+            document.getElementById('montant-input').value = total;
+        }
+
+        document.getElementById('articles-container').addEventListener('input', calculateTotal);
+        
+        document.getElementById('compteSelect').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const articles = selectedOption.value ? JSON.parse(selectedOption.getAttribute('data-articles') || '[]') : [];
+            
+            let optionsHtml = '<option value="">Choisir un article...</option>';
+            articles.forEach(a => {
+                optionsHtml += `<option value="${a.id}">${a.designation}</option>`;
+            });
+            
+            if (!selectedOption.value) {
+                optionsHtml = '<option value="">Sélectionnez d\'abord un compte...</option>';
+            }
+
+            document.querySelectorAll('.article-select').forEach(select => {
+                select.innerHTML = optionsHtml;
+            });
         });
     </script>
 @endsection

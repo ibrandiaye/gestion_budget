@@ -31,4 +31,9 @@ class PvReception extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function signatairesRelation()
+    {
+        return $this->belongsToMany(Signataire::class, 'pv_reception_signataire');
+    }
 }

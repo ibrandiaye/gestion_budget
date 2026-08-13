@@ -49,6 +49,12 @@
                     </tr>
                     @endforeach
                 </tbody>
+                <tfoot>
+                    <tr style="background: var(--slate-50); border-top: 2px solid var(--border-color);">
+                        <td colspan="4" style="padding: 0.75rem; text-align: right; font-weight: bold;">TOTAL :</td>
+                        <td style="padding: 0.75rem; text-align: right; font-weight: bold; color: var(--success); font-size: 1.1rem;">{{ number_format($marche->montant, 0, ',', ' ') }} FCFA</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
