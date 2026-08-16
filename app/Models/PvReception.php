@@ -34,6 +34,6 @@ class PvReception extends Model
 
     public function signatairesRelation()
     {
-        return $this->belongsToMany(Signataire::class, 'pv_reception_signataire');
+        return $this->belongsToMany(Signataire::class, 'pv_reception_signataire')->orderBy('pv_reception_signataire.id');
     }
 }

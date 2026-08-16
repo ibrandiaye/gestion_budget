@@ -106,31 +106,14 @@ class ReportingController extends Controller
                  $total_alloue = 0; 
             }
             
-            $total_besoins = 0;
+            $total_commandes = 0;
             $total_engage = 0;
 
             if ($budget) {
-                // Somme des besoins pour ce compte et ce budget
-                // On récupère les besoins et on fait la somme en PHP pour gérer les anciens enregistrements
-                // où montant_demande pourrait être null
-                $besoins = \App\Models\Besoin::where('budget_id', $budget->id)
+                // Somme des commandes pour ce compte et ce budget
+                $total_commandes = \App\Models\Commande::where('budget_id', $budget->id)
                     ->where('compte_id', $compte->id)
-                    ->get();
-                
-                $total_besoins = $besoins->sum(function($besoin) use ($compte) {
-                    // Si le montant est déjà défini, on l'utilise
-                    if (!empty($besoin->montant_demande) && $besoin->montant_demande > 0) {
-                        return $besoin->montant_demande;
-                    }
-                    
-                    // Sinon (anciennes données), on calcule : Quantité * Prix
-                    // Priorité au prix unitaire du besoin, sinon prix ref du compte
-                    $prix = !empty($besoin->prix_unitaire) && $besoin->prix_unitaire > 0 
-                        ? $besoin->prix_unitaire 
-                        : $compte->prix_unitaire_ref;
-                        
-                    return $besoin->quantite * $prix;
-                });
+                    ->sum('montant_ttc');
 
                 // Somme des engagements pour ce compte et ce budget (via commandes)
                 $total_engage = \App\Models\Engagement::whereHas('commande', function($q) use ($budget, $compte) {
@@ -143,9 +126,8 @@ class ReportingController extends Controller
             return (object) [
                 'compte' => $compte,
                 'total_alloue' => $total_alloue,
-                'total_besoins' => $total_besoins,
+                'total_commandes' => $total_commandes,
                 'total_engage' => $total_engage,
-                // Le reste sera calculé dans la vue ou ici
             ];
         })->sortBy('compte.numero');
 

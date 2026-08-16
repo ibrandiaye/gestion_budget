@@ -28,7 +28,7 @@
                     <th style="padding: 1rem;">Compte</th>
                     <th style="padding: 1rem;">Libellé</th>
                     <th style="padding: 1rem;">Dotation Initiale</th>
-                    <th style="padding: 1rem;">Total Besoins</th>
+                    <th style="padding: 1rem;">Total Commandes</th>
                     <th style="padding: 1rem;">Total Engagé</th>
                     <th style="padding: 1rem;">Disponible</th>
                     <th style="padding: 1rem;">Taux</th>
@@ -47,7 +47,7 @@
                             {{ number_format($stat->total_alloue, 0, ',', ' ') }}
                         </td>
                         <td style="padding: 1rem; font-family: monospace; color: var(--text-muted);">
-                            {{ number_format($stat->total_besoins, 0, ',', ' ') }}
+                            {{ number_format($stat->total_commandes, 0, ',', ' ') }}
                         </td>
                         <td style="padding: 1rem; font-family: monospace;">
                             {{ number_format($stat->total_engage, 0, ',', ' ') }}
@@ -76,7 +76,7 @@
                 <tr style="background: var(--slate-50); font-weight: 700;">
                     <td colspan="2" style="padding: 1rem; text-align: right;">TOTAL GÉNÉRAL</td>
                     <td style="padding: 1rem;">{{ number_format($statsComptes->sum('total_alloue'), 0, ',', ' ') }}</td>
-                    <td style="padding: 1rem;">{{ number_format($statsComptes->sum('total_besoins'), 0, ',', ' ') }}</td>
+                    <td style="padding: 1rem;">{{ number_format($statsComptes->sum('total_commandes'), 0, ',', ' ') }}</td>
                     <td style="padding: 1rem;">{{ number_format($statsComptes->sum('total_engage'), 0, ',', ' ') }}</td>
                     <td style="padding: 1rem;">
                         {{ number_format($statsComptes->sum('total_alloue') - $statsComptes->sum('total_engage'), 0, ',', ' ') }}

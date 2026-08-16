@@ -58,13 +58,13 @@
                 </div>
 
                 <!-- Actions -->
-                <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; text-align: right;">
+                <!-- <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; text-align: right;">
                     <button
                         onclick="openModal({{ $stat->compte->id }}, '{{ $stat->compte->libelle }}', {{ $stat->lignes->toJson() }}, {{ $stat->compte->is_marche ? 'true' : 'false' }})"
                         class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" {{ $stat->solde_disponible <= 0 ? 'disabled style=opacity:0.5;cursor:not-allowed;' : '' }}>
                         Nouvelle Dépense
                     </button>
-                </div>
+                </div> -->
             </div>
         @empty
             <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: var(--text-muted);">

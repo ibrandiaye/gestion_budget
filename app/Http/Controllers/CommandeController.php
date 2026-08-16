@@ -216,13 +216,13 @@ class CommandeController extends Controller
         ]);
 
         $commande->update([
-            'statut' => 'rejete',
+            'statut' => 'brouillon',
             'valide_par' => Auth::id(),
             'valide_at' => now(),
             'motif_rejet' => $request->motif,
         ]);
 
-        return back()->with('success', 'Commande refusée avec succès.');
+        return back()->with('success', 'Commande renvoyée en brouillon avec succès.');
     }
 
     public function finaliserValidation(Commande $commande)
@@ -235,11 +235,11 @@ class CommandeController extends Controller
 
         if ($articlesValides === 0) {
             $commande->update([
-                'statut' => 'rejete',
+                'statut' => 'brouillon',
                 'valide_par' => Auth::id(),
                 'valide_at' => now(),
             ]);
-            return back()->with('success', 'Commande rejetée (aucun article validé).');
+            return back()->with('success', 'Commande renvoyée en brouillon (aucun article validé).');
         }
 
         $commande->update([

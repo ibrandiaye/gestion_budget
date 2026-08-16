@@ -90,10 +90,6 @@
                                         @csrf
                                         <button type="submit" style="background: var(--success); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Valider</button>
                                     </form>
-                                    <form action="{{ route('commandes.rejeter-article', [$commande, $article]) }}" method="POST" style="display: inline;">
-                                        @csrf
-                                        <button type="submit" style="background: var(--danger); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Rejeter</button>
-                                    </form>
                                 </div>
                             @endif
                         </td>
@@ -129,7 +125,7 @@
             @endif
 
             @if($commande->statut === 'soumis')
-                <button type="button" onclick="refuserCommande()" class="btn-secondary" style="background: var(--danger); color: white; border: none;">Refuser la Commande</button>
+                <button type="button" onclick="refuserCommande()" class="btn-secondary" style="background: var(--warning); color: white; border: none;">Renvoyer en brouillon</button>
                 <form action="{{ route('commandes.finaliser', $commande) }}" method="POST">
                     @csrf
                     <button type="submit" class="btn-primary">Finaliser la validation</button>
@@ -138,20 +134,25 @@
 
             @if($commande->statut === 'valide')
                 <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-primary">📄 Imprimer le Bon</a>
-                @if($commande->engagement)
+             
+                @if($commande->montant_ttc >= 300000)
+                    <a href="{{ route('pv-receptions.create', ['commande_id' => $commande->id]) }}" class="btn-secondary" style="background: var(--warning); color: white; border: none;">📦 Saisir Réception (PV)</a>
+                @endif
+                   @if($commande->engagement)
                     <a href="{{ route('engagements.show', $commande->engagement) }}" class="btn-secondary">Voir l'engagement →</a>
                 @endif
-                <a href="{{ route('pv-receptions.create', ['commande_id' => $commande->id]) }}" class="btn-secondary" style="background: var(--warning); color: white; border: none;">📦 Saisir Réception (PV)</a>
             @else
                 <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-secondary">📄 Imprimer (Brouillon)</a>
             @endif
         </div>
         
-        @if($commande->statut === 'rejete' && $commande->motif_rejet)
-            <div style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-top: 1.5rem;">
-                <strong>Motif du rejet:</strong>
-                <p>{{ $commande->motif_rejet }}</p>
-            </div>
+        @if($commande->statut === 'brouillon' && $commande->motif_rejet)
+        <div style="margin-top: 1.5rem; padding: 1rem; background: #fee2e2; border: 1px solid #fecaca; border-radius: 0.5rem;">
+            <h4 style="color: #b91c1c; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                ⚠️ Motif du renvoi en brouillon
+            </h4>
+            <p style="color: #991b1b; margin: 0;">{{ $commande->motif_rejet }}</p>
+        </div>
         @endif
     </div>
 
@@ -164,7 +165,7 @@
         
         <script>
             function refuserCommande() {
-                const motif = prompt('Veuillez saisir le motif du rejet:');
+                const motif = prompt('Veuillez saisir le motif du renvoi en brouillon:');
                 if (motif && motif.trim()) {
                     document.getElementById('motifRefusInput').value = motif;
                     document.getElementById('refusForm').submit();

@@ -21,6 +21,11 @@ class PvReceptionController extends Controller
     {
         $commande_id = $request->get('commande_id');
         $commande    = Commande::with('articles')->findOrFail($commande_id);
+        
+        if ($commande->montant_ttc < 300000) {
+            return redirect()->route('commandes.show', $commande)->withErrors(['pv' => 'Le PV de réception n\'est pas requis pour les commandes inférieures à 300 000 FCFA.']);
+        }
+        
         $signataires = Signataire::where('actif', true)->orderBy('nom')->get();
 
         // Quantités déjà réceptionnées par article (cumul de tous les PVs précédents)
@@ -46,6 +51,9 @@ class PvReceptionController extends Controller
         ]);
 
         $commande = Commande::with('articles')->findOrFail($request->commande_id);
+        if ($commande->montant_ttc < 300000) {
+            return back()->withErrors(['pv' => 'Le PV de réception n\'est pas requis pour les commandes inférieures à 300 000 FCFA.']);
+        }
 
         // Cumul déjà réceptionné par article sur tous les PVs existants
         $dejaRecus = PvReceptionArticle::whereHas('pvReception', fn($q) => $q->where('commande_id', $commande->id))

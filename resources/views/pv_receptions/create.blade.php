@@ -26,6 +26,7 @@
 .sig-card:hover { border-color: var(--primary-400, #60a5fa); background: var(--primary-50, #eff6ff); }
 .sig-card input[type=checkbox]:checked + .sig-info { color: var(--primary-700); }
 .sig-card.selected { border-color: var(--primary-600, #2563eb); background: var(--primary-50, #eff6ff); }
+.sig-card.drag-over { border-top: 3px solid var(--primary-500, #3b82f6); margin-top: 2px; }
 </style>
 
 <div style="margin-bottom:1.5rem;">
@@ -65,7 +66,7 @@
                             <th style="padding:0.6rem 0.75rem; text-align:right; border-bottom:2px solid var(--border-color);">Cond.</th>
                             <th style="padding:0.6rem 0.75rem; text-align:right; border-bottom:2px solid var(--border-color);">P.U (FCFA)</th>
                             <th style="padding:0.6rem 0.75rem; text-align:right; border-bottom:2px solid var(--border-color); background:#eff6ff;">Qté Cmdée</th>
-                            <th style="padding:0.6rem 0.75rem; text-align:right; border-bottom:2px solid var(--border-color); background:#fef9c3;">Déjà reçu</th>
+                            <th style="padding:0.6rem 0.75rem; text-align:right; border-bottom:2px solid var(--border-color); background:#fef9c3;">Déjà Livré</th>
                             <th style="padding:0.6rem 0.75rem; text-align:right; border-bottom:2px solid var(--border-color); background:#dcfce7;">Restant</th>
                             <th style="padding:0.6rem 0.75rem; text-align:right; border-bottom:2px solid var(--border-color); background:#f0fdf4;">Qté ce PV</th>
                         </tr>
@@ -153,9 +154,10 @@
                     <a href="{{ route('signataires.index') }}" class="btn-primary" style="text-decoration:none; font-size:0.85rem;">Gérer les signataires</a>
                 </div>
             @else
-                <div style="display:flex; flex-direction:column; gap:0.5rem; max-height:400px; overflow-y:auto; padding-right:0.25rem;">
+                <div id="signataire-list" style="display:flex; flex-direction:column; gap:0.5rem; max-height:400px; overflow-y:auto; padding-right:0.25rem;">
                     @foreach($signataires as $sig)
-                    <label class="sig-card" id="card-{{ $sig->id }}">
+                    <label class="sig-card" id="card-{{ $sig->id }}" draggable="true" ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="drop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)" ondragend="dragEnd(event)">
+                        <div style="cursor:grab; color:var(--slate-400); padding-right:0.5rem; font-size:1.2rem; user-select:none;">☰</div>
                         <input type="checkbox"
                             name="signataire_ids[]"
                             value="{{ $sig->id }}"
@@ -183,4 +185,54 @@
 
     </div>
 </form>
+
+<script>
+    let draggedItem = null;
+
+    function dragStart(e) {
+        draggedItem = e.currentTarget;
+        e.dataTransfer.effectAllowed = "move";
+        setTimeout(() => { draggedItem.style.opacity = "0.5"; }, 0);
+    }
+
+    function dragEnter(e) {
+        e.preventDefault();
+        const target = e.currentTarget;
+        if (target !== draggedItem) {
+            target.classList.add('drag-over');
+        }
+    }
+
+    function dragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+
+    function dragOver(e) {
+        e.preventDefault(); 
+        e.dataTransfer.dropEffect = "move";
+    }
+
+    function drop(e) {
+        e.preventDefault();
+        const target = e.currentTarget;
+        target.classList.remove('drag-over');
+        if (target !== draggedItem) {
+            const list = document.getElementById('signataire-list');
+            const allItems = Array.from(list.children);
+            const draggedIndex = allItems.indexOf(draggedItem);
+            const targetIndex = allItems.indexOf(target);
+            
+            if (draggedIndex < targetIndex) {
+                target.after(draggedItem);
+            } else {
+                target.before(draggedItem);
+            }
+        }
+    }
+
+    function dragEnd(e) {
+        e.currentTarget.style.opacity = "1";
+        document.querySelectorAll('.sig-card').forEach(c => c.classList.remove('drag-over'));
+    }
+</script>
 @endsection
