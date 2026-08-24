@@ -86,6 +86,11 @@ class Commande extends Model
         return $this->hasOne(Engagement::class);
     }
 
+    public function pvReceptions()
+    {
+        return $this->hasMany(PvReception::class);
+    }
+
     public function articlesValides()
     {
         return $this->articles()->where('valide', true);

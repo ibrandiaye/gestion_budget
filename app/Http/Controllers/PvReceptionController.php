@@ -21,12 +21,6 @@ class PvReceptionController extends Controller
     {
         $commande_id = $request->get('commande_id');
         $commande    = Commande::with('articles')->findOrFail($commande_id);
-        
-        if ($commande->montant_ttc < 300000) {
-            return redirect()->route('commandes.show', $commande)->withErrors(['pv' => 'Le PV de réception n\'est pas requis pour les commandes inférieures à 300 000 FCFA.']);
-        }
-        
-        $signataires = Signataire::where('actif', true)->orderBy('nom')->get();
 
         // Quantités déjà réceptionnées par article (cumul de tous les PVs précédents)
         $dejaRecus = PvReceptionArticle::whereHas('pvReception', fn($q) => $q->where('commande_id', $commande_id))
@@ -34,7 +28,7 @@ class PvReceptionController extends Controller
             ->groupBy('commande_article_id')
             ->pluck('total_recu', 'commande_article_id');
 
-        return view('pv_receptions.create', compact('commande', 'signataires', 'dejaRecus'));
+        return view('pv_receptions.create', compact('commande', 'dejaRecus'));
     }
 
     public function store(Request $request)
@@ -46,14 +40,9 @@ class PvReceptionController extends Controller
             'articles'                         => 'required|array',
             'articles.*.commande_article_id'   => 'required|exists:commande_articles,id',
             'articles.*.quantite_receptionnee' => 'required|integer|min:0',
-            'signataire_ids'                   => 'nullable|array',
-            'signataire_ids.*'                 => 'exists:signataires,id',
         ]);
 
         $commande = Commande::with('articles')->findOrFail($request->commande_id);
-        if ($commande->montant_ttc < 300000) {
-            return back()->withErrors(['pv' => 'Le PV de réception n\'est pas requis pour les commandes inférieures à 300 000 FCFA.']);
-        }
 
         // Cumul déjà réceptionné par article sur tous les PVs existants
         $dejaRecus = PvReceptionArticle::whereHas('pvReception', fn($q) => $q->where('commande_id', $commande->id))
@@ -63,6 +52,7 @@ class PvReceptionController extends Controller
 
         // Validation cumulative
         $errors = [];
+        $totalQuantiteSaisie = 0;
         foreach ($request->articles as $art) {
             $c_art    = $commande->articles->where('id', $art['commande_article_id'])->first();
             if (!$c_art) continue;
@@ -70,12 +60,17 @@ class PvReceptionController extends Controller
             $dejaRecu = (int) ($dejaRecus[$c_art->id] ?? 0);
             $restant  = $c_art->quantite - $dejaRecu;
             $saisie   = (int) $art['quantite_receptionnee'];
+            $totalQuantiteSaisie += $saisie;
 
-            if ($restant <= 0) {
+            if ($restant <= 0 && $saisie > 0) {
                 $errors[] = "\"" . $c_art->designation . "\" : déjà entièrement réceptionné ({$dejaRecu}/{$c_art->quantite}).";
             } elseif ($saisie > $restant) {
                 $errors[] = "\"" . $c_art->designation . "\" : quantité saisie ({$saisie}) dépasse le restant à recevoir ({$restant}).";
             }
+        }
+
+        if ($totalQuantiteSaisie <= 0) {
+            $errors[] = "Veuillez saisir au moins une quantité à réceptionner supérieure à zéro.";
         }
 
         if (!empty($errors)) {
@@ -89,7 +84,7 @@ class PvReceptionController extends Controller
         foreach ($request->articles as $art) {
             $c_art = $commande->articles->where('id', $art['commande_article_id'])->first();
             if ($c_art) {
-                $montant_total += $c_art->prix_unitaire * $art['quantite_receptionnee'];
+                $montant_total += $c_art->prix_unitaire * (int)$art['quantite_receptionnee'];
             }
         }
 
@@ -112,18 +107,14 @@ class PvReceptionController extends Controller
             'pieces_justificatives' => $pieces,
         ]);
 
-        if ($request->signataire_ids) {
-            $pv->signatairesRelation()->attach($request->signataire_ids);
-        }
-
         foreach ($request->articles as $art) {
             $pv->articles()->create([
                 'commande_article_id'   => $art['commande_article_id'],
-                'quantite_receptionnee' => $art['quantite_receptionnee'],
+                'quantite_receptionnee' => (int)$art['quantite_receptionnee'],
             ]);
         }
 
-        return redirect()->route('pv-receptions.show', $pv)->with('success', 'PV de réception créé avec succès.');
+        return redirect()->route('pv-receptions.show', $pv)->with('success', 'Réception enregistrée avec succès.');
     }
 
     public function show(PvReception $pv_reception)
@@ -137,6 +128,27 @@ class PvReceptionController extends Controller
             'createdBy',
         ]);
 
-        return view('pv_receptions.show', compact('pv_reception'));
+        $allSignataires = Signataire::where('actif', true)->orderBy('nom')->get();
+
+        return view('pv_receptions.show', compact('pv_reception', 'allSignataires'));
+    }
+
+    public function updateSignataires(Request $request, PvReception $pv_reception)
+    {
+        $request->validate([
+            'signataire_ids'   => 'nullable|array',
+            'signataire_ids.*' => 'exists:signataires,id',
+        ]);
+
+        $pv_reception->signatairesRelation()->detach();
+        if (!empty($request->signataire_ids)) {
+            $pv_reception->signatairesRelation()->attach($request->signataire_ids);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return back()->with('success', 'Signataires mis à jour.');
     }
 }

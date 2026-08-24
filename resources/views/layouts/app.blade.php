@@ -72,7 +72,7 @@
                 
                 @if(Auth::user()->can('pv_receptions.view') || Auth::user()->role === 'admin')
                 <a href="{{ route('pv-receptions.index') }}" class="nav-item {{ request()->routeIs('pv-receptions.*') ? 'active' : '' }}">
-                    <span class="icon">📦</span> PV Réceptions
+                    <span class="icon">📦</span> Réceptions
                 </a>
                 @endif
 

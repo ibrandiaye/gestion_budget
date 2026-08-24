@@ -127,6 +127,7 @@ Route::middleware('auth')->group(function () {
 
     // PV de Réception
     Route::resource('pv-receptions', PvReceptionController::class);
+    Route::post('/pv-receptions/{pv_reception}/signataires', [PvReceptionController::class, 'updateSignataires'])->name('pv-receptions.update-signataires');
 
     // Signataires
     Route::get('/signataires', [SignataireController::class, 'index'])->name('signataires.index');

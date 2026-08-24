@@ -97,18 +97,12 @@ class CommandeController extends Controller
         $compte = Compte::findOrFail($request->compte_id);
         $dotation = $compte->getDotationForBudget($budget->id);
         
-        // Calculer le total déjà engagé sur ce compte pour ce budget (tous services confondus)
-        $totalEngageCompte = Engagement::where(function($query) use ($budget, $request) {
-            $query->where(function($q) use ($budget, $request) {
-                $q->where('budget_id', $budget->id)
-                  ->where('compte_id', $request->compte_id);
-            })->orWhereHas('commande', function($q) use ($budget, $request) {
-                $q->where('budget_id', $budget->id)
-                  ->where('compte_id', $request->compte_id);
-            });
-        })->sum('montant');
+        // Calculer le total déjà commandé sur ce compte pour ce budget (tous services confondus)
+        $totalCommandeCompte = Commande::where('budget_id', $budget->id)
+            ->where('compte_id', $request->compte_id)
+            ->sum('montant_ttc');
         
-        $disponible = $dotation - $totalEngageCompte;
+        $disponible = $dotation - $totalCommandeCompte;
 
         if ($montantTotal > $disponible) {
             return back()->withErrors([
@@ -168,7 +162,7 @@ class CommandeController extends Controller
 
     public function show(Commande $commande)
     {
-        $commande->load(['compte', 'service', 'articles', 'engagement']);
+        $commande->load(['compte', 'service', 'articles', 'engagement.mandat', 'pvReceptions']);
         return view('commandes.show', compact('commande'));
     }
 
