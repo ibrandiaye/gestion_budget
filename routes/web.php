@@ -141,6 +141,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/commandes/creer', [CommandeController::class, 'create'])->name('commandes.create');
     Route::post('/commandes', [CommandeController::class, 'store'])->name('commandes.store');
     Route::get('/commandes/{commande}', [CommandeController::class, 'show'])->name('commandes.show');
+    Route::get('/commandes/{commande}/edit', [CommandeController::class, 'edit'])->name('commandes.edit');
+    Route::put('/commandes/{commande}', [CommandeController::class, 'update'])->name('commandes.update');
+    Route::delete('/commandes/{commande}', [CommandeController::class, 'destroy'])->name('commandes.destroy');
     Route::post('/commandes/{commande}/soumettre', [CommandeController::class, 'soumettre'])->name('commandes.soumettre');
     Route::post('/commandes/{commande}/articles/{article}/valider', [CommandeController::class, 'validerArticle'])->name('commandes.valider-article');
     Route::post('/commandes/{commande}/articles/{article}/rejeter', [CommandeController::class, 'rejeterArticle'])->name('commandes.rejeter-article');

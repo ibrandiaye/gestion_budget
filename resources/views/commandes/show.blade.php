@@ -164,11 +164,25 @@
         </table>
 
         <div style="display: flex; justify-content: flex-end; gap: 1rem;">
-            @if($commande->statut === 'brouillon')
+            @if(in_array($commande->statut, ['brouillon', 'rejete']))
+                @if(Auth::user()->can('commandes.edit') || Auth::user()->role === 'admin')
+                    <a href="{{ route('commandes.edit', $commande) }}" class="btn-secondary" style="background: var(--slate-200); color: var(--slate-800);">✏️ Modifier</a>
+                @endif
+
+                @if(Auth::user()->can('commandes.delete') || Auth::user()->role === 'admin')
+                    <form action="{{ route('commandes.destroy', $commande) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette commande ?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-secondary" style="background: var(--danger); color: white; border: none;">🗑️ Supprimer</button>
+                    </form>
+                @endif
+
+                @if(Auth::user()->can('commandes.soumettre') || Auth::user()->role === 'admin')
                 <form action="{{ route('commandes.soumettre', $commande) }}" method="POST">
                     @csrf
                     <button type="submit" class="btn-primary">Soumettre pour validation</button>
                 </form>
+                @endif
             @endif
 
             @if($commande->statut === 'soumis')

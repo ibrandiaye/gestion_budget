@@ -48,9 +48,22 @@
                                 {{ ucfirst($commande->statut) }}
                             </span>
                         </td>
-                        <td style="padding: 0.75rem; text-align: center;">
+                        <td style="padding: 0.75rem; text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
                             <a href="{{ route('commandes.show', $commande) }}" style="color: var(--primary); text-decoration: none;">Voir</a>
                             | <a href="{{ route('commandes.document', $commande) }}" target="_blank" style="color: var(--success); text-decoration: none;">📄</a>
+                            
+                            @if(in_array($commande->statut, ['brouillon', 'rejete']))
+                                @if(Auth::user()->can('commandes.edit') || Auth::user()->role === 'admin')
+                                    | <a href="{{ route('commandes.edit', $commande) }}" style="color: var(--slate-700); text-decoration: none;" title="Modifier">✏️</a>
+                                @endif
+                                @if(Auth::user()->can('commandes.delete') || Auth::user()->role === 'admin')
+                                    | <form action="{{ route('commandes.destroy', $commande) }}" method="POST" style="display: inline;" onsubmit="return confirm('Supprimer ?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" style="background: none; border: none; padding: 0; color: var(--danger); cursor: pointer;" title="Supprimer">🗑️</button>
+                                    </form>
+                                @endif
+                            @endif
                         </td>
                     </tr>
                     @endforeach

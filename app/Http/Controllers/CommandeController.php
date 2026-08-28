@@ -106,7 +106,7 @@ class CommandeController extends Controller
 
         if ($montantTotal > $disponible) {
             return back()->withErrors([
-                'budget' => "Budget insuffisant sur le compte " . $compte->numero . ". Dotation: " . number_format($dotation, 0, ',', ' ') . " FCFA. Disponible réel: " . number_format($disponible, 0, ',', ' ') . " FCFA. Demandé: " . number_format($montantTotal, 0, ',', ' ') . " FCFA."
+                'budget' => "Budget insuffisant sur le compte " . $compte->numero . ". Dotation: " . number_format($dotation, 0, ',', ' ') . " FCFA. Disponible pour commande: " . number_format($disponible, 0, ',', ' ') . " FCFA. Demandé: " . number_format($montantTotal, 0, ',', ' ') . " FCFA."
             ]);
         }
         // --- FIN MODIFICATION ---
@@ -159,8 +159,150 @@ class CommandeController extends Controller
         return redirect()->route('commandes.index')->with('success', 'Bon de commande créé avec succès.');
     }
 
+    public function edit(Commande $commande)
+    {
+        if (!in_array($commande->statut, ['brouillon', 'rejete'])) {
+            return back()->withErrors(['statut' => 'Seule une commande en brouillon peut être modifiée.']);
+        }
 
-    public function show(Commande $commande)
+        $comptes = Compte::with(['articles' => fn($q) => $q->where('actif', true)])
+            ->where('etat', 'actif')
+            ->whereNotNull('compte_parent_id')
+            ->get();
+            
+        $budget = Budget::whereIn('statut', ['brouillon', 'actif'])->latest('annee')->first();
+        $marches = \App\Models\Marche::with(['fournisseur', 'articles'])->get();
+
+        $commande->load('articles');
+
+        return view('commandes.edit', compact('commande', 'comptes', 'budget', 'marches'));
+    }
+
+    public function update(Request $request, Commande $commande)
+    {
+        if (!in_array($commande->statut, ['brouillon', 'rejete'])) {
+            return back()->withErrors(['statut' => 'Seule une commande en brouillon peut être modifiée.']);
+        }
+
+        $request->validate([
+            'compte_id' => 'required|exists:comptes,id',
+            'date' => 'required|date',
+            'fournisseur' => 'nullable|string|max:191',
+            'reference' => 'nullable|string|max:191',
+            'caisse' => 'nullable|string|max:100',
+            'fichier' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'source' => 'required|string|in:Marché,Facture Pro-forma,Autre',
+            'marche_id' => 'nullable|exists:marches,id|required_if:source,Marché',
+            'articles' => 'required_unless:source,Marché|array',
+            'articles.*.article_id' => 'required_with:articles|exists:articles,id',
+            'articles.*.conditionnement' => 'nullable|string|max:100',
+            'articles.*.quantite' => 'required_with:articles|integer|min:1',
+            'articles.*.prix_unitaire' => 'required_with:articles|numeric|min:0',
+        ]);
+
+        $budget = Budget::whereIn('statut', ['brouillon', 'actif'])->latest('annee')->first();
+        if (!$budget) {
+            return back()->withErrors(['budget' => 'Aucun exercice budgétaire actif.']);
+        }
+
+        $articlesSource = $request->articles ?? [];
+        $fournisseurNom = $request->fournisseur;
+        
+        if ($request->source === 'Marché') {
+            $marche = \App\Models\Marche::with(['articles', 'fournisseur'])->find($request->marche_id);
+            if ($marche && $marche->fournisseur) {
+                $fournisseurNom = $marche->fournisseur->nom;
+            }
+            $articlesSource = $marche->articles->map(function($art) {
+                return [
+                    'designation' => $art->designation,
+                    'conditionnement' => $art->conditionnement,
+                    'quantite' => $art->quantite,
+                    'prix_unitaire' => $art->prix_unitaire,
+                    'article_id' => null
+                ];
+            })->toArray();
+        }
+
+        $montantTotal = 0;
+        foreach ($articlesSource as $art) {
+            $montantTotal += $art['quantite'] * $art['prix_unitaire'];
+        }
+
+        $compte = Compte::findOrFail($request->compte_id);
+        $dotation = $compte->getDotationForBudget($budget->id);
+        
+        $totalCommandeCompte = Commande::where('budget_id', $budget->id)
+            ->where('compte_id', $request->compte_id)
+            ->where('id', '!=', $commande->id)
+            ->sum('montant_ttc');
+        
+        $disponible = $dotation - $totalCommandeCompte;
+
+        if ($montantTotal > $disponible) {
+            return back()->withErrors([
+                'budget' => "Budget insuffisant sur le compte " . $compte->numero . ". Dotation: " . number_format($dotation, 0, ',', ' ') . " FCFA. Disponible pour commande: " . number_format($disponible, 0, ',', ' ') . " FCFA. Demandé: " . number_format($montantTotal, 0, ',', ' ') . " FCFA."
+            ]);
+        }
+
+        $fichierPath = $commande->fichier;
+        if ($request->hasFile('fichier')) {
+            $fichierPath = $request->file('fichier')->store('commandes', 'public');
+        }
+
+        DB::transaction(function () use ($commande, $request, $montantTotal, $fichierPath, $fournisseurNom, $articlesSource) {
+            $commande->update([
+                'date' => $request->date,
+                'compte_id' => $request->compte_id,
+                'fournisseur' => $fournisseurNom,
+                'reference' => $request->reference,
+                'source' => $request->source,
+                'marche_id' => $request->source === 'Marché' ? $request->marche_id : null,
+                'caisse' => $request->caisse ?? 'Caisse avance',
+                'fichier' => $fichierPath,
+                'montant_ttc' => $montantTotal,
+            ]);
+
+            $commande->articles()->delete();
+
+            foreach ($articlesSource as $art) {
+                $designation = $art['designation'] ?? '';
+                if (empty($designation) && !empty($art['article_id'])) {
+                    $articleModel = \App\Models\Article::find($art['article_id']);
+                    if ($articleModel) {
+                        $designation = $articleModel->designation;
+                    }
+                }
+
+                CommandeArticle::create([
+                    'commande_id' => $commande->id,
+                    'article_id' => $art['article_id'] ?? null,
+                    'designation' => $designation,
+                    'conditionnement' => $art['conditionnement'] ?? null,
+                    'quantite' => $art['quantite'],
+                    'prix_unitaire' => $art['prix_unitaire'],
+                    'montant_ht' => $art['quantite'] * $art['prix_unitaire'],
+                    'valide' => false,
+                ]);
+            }
+        });
+
+        return redirect()->route('commandes.show', $commande)->with('success', 'Bon de commande modifié avec succès.');
+    }
+
+    public function destroy(Commande $commande)
+    {
+        if (!in_array($commande->statut, ['brouillon', 'rejete'])) {
+            return back()->withErrors(['statut' => 'Seule une commande en brouillon peut être supprimée.']);
+        }
+        
+        DB::transaction(function () use ($commande) {
+            $commande->articles()->delete();
+            $commande->delete();
+        });
+
+        return redirect()->route('commandes.index')->with('success', 'Commande supprimée avec succès.');
+    }    public function show(Commande $commande)
     {
         $commande->load(['compte', 'service', 'articles', 'engagement.mandat', 'pvReceptions']);
         return view('commandes.show', compact('commande'));

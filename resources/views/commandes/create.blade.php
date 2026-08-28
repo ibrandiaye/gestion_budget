@@ -313,7 +313,7 @@
             div.innerHTML = `
                 <div>
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Article *</label>
-                    <select name="articles[${index}][article_id]" required class="article-select"
+                    <select name="articles[${index}][article_id]" required class="article-select" onchange="selectArticle(this)"
                         style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
                         ${articleOptions}
                     </select>
