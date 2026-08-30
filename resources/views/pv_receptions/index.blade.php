@@ -54,11 +54,33 @@
                             @endif
                         </td>
                         <td style="padding: 0.75rem; text-align: center;">
-                            <a href="{{ route('pv-receptions.show', $pv) }}" class="btn-primary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; text-decoration: none;">
-                                Consulter
-                            </a>
+                            <div style="display:flex; gap:0.4rem; justify-content:center; align-items:center;">
+                                <a href="{{ route('pv-receptions.show', $pv) }}" class="btn-primary"
+                                    style="padding: 0.3rem 0.75rem; font-size: 0.8rem; text-decoration: none;">
+                                    👁 Consulter
+                                </a>
+                                @if(Auth::user()->can('pv_receptions.edit') || Auth::user()->role === 'admin')
+                                <a href="{{ route('pv-receptions.edit', $pv) }}"
+                                    style="padding: 0.3rem 0.75rem; font-size: 0.8rem; text-decoration: none; background:#fef9c3; color:#92400e; border-radius:0.4rem; border:1px solid #fde68a;">
+                                    ✏️ Modifier
+                                </a>
+                                @endif
+                                @if(Auth::user()->can('pv_receptions.delete') || Auth::user()->role === 'admin')
+                                <form action="{{ route('pv-receptions.destroy', $pv) }}" method="POST"
+                                    onsubmit="return confirm('Supprimer cette réception ? Cette action est irréversible.');"
+                                    style="display:inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                        style="padding: 0.3rem 0.75rem; font-size: 0.8rem; background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; border-radius:0.4rem; cursor:pointer;">
+                                        🗑 Supprimer
+                                    </button>
+                                </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
+
                     @endforeach
                 </tbody>
             </table>

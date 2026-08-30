@@ -51,7 +51,7 @@ class EngagementController extends Controller
             'compte_id' => 'required|exists:comptes,id',
             'date' => 'required|date',
             'objet' => 'required|string|max:191',
-            'montant' => 'required|numeric|min:1|max:300000',
+            'montant' => 'required|numeric|min:1',
             'nom_fournisseur' => 'required|string|max:191',
         ]);
 

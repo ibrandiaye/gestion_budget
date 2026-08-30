@@ -70,7 +70,7 @@
                 </div>
                 <div>
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Montant (FCFA) *</label>
-                    <input type="number" name="montant" required max="300000" min="1" value="{{ old('montant') }}" placeholder="Max 300 000" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    <input type="number" name="montant" required min="1" value="{{ old('montant') }}" placeholder="Montant en FCFA" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                 </div>
             </div>
 

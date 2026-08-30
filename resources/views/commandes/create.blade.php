@@ -292,6 +292,19 @@
 
             document.getElementById('fournisseurNom').value = option.getAttribute('data-nom');
             
+            // Extract articles from the option and update currentCompteArticles
+            const articlesAttr = option.getAttribute('data-articles');
+            if (articlesAttr) {
+                const fArticles = JSON.parse(articlesAttr);
+                if (fArticles && fArticles.length > 0) {
+                    currentCompteArticles = fArticles;
+                } else {
+                    currentCompteArticles = [];
+                }
+            } else {
+                currentCompteArticles = [];
+            }
+            
             // Add first article line
             addArticleLine();
         }
@@ -307,7 +320,8 @@
 
             let articleOptions = '<option value="">Choisir article...</option>';
             currentCompteArticles.forEach(a => {
-                articleOptions += `<option value="${a.id}" data-designation="${a.designation}">${a.designation}</option>`;
+                const prix = a.pivot ? a.pivot.prix : 0;
+                articleOptions += `<option value="${a.id}" data-designation="${a.designation}" data-prix="${prix}">${a.designation}</option>`;
             });
 
             div.innerHTML = `
@@ -349,16 +363,27 @@
         function selectArticle(select) {
             const option = select.options[select.selectedIndex];
             const line = select.closest('.article-line');
+            const prixInput = line.querySelector('.prix-input');
             
             if (option.value) {
                 const prix = parseFloat(option.getAttribute('data-prix')) || 0;
-                const designation = option.getAttribute('data-designation');
-                
-                line.querySelector('.prix-input').value = prix;
-                line.querySelector('.designation-hidden').value = designation;
+                prixInput.value = prix;
+                if (typeof fournisseurRequis !== 'undefined' && fournisseurRequis) {
+                    prixInput.readOnly = true;
+                    prixInput.style.backgroundColor = 'var(--slate-100)';
+                } else {
+                    prixInput.readOnly = false;
+                    prixInput.style.backgroundColor = '';
+                }
             } else {
-                line.querySelector('.prix-input').value = 0;
-                line.querySelector('.designation-hidden').value = '';
+                prixInput.value = 0;
+                if (typeof fournisseurRequis !== 'undefined' && fournisseurRequis) {
+                    prixInput.readOnly = true;
+                    prixInput.style.backgroundColor = 'var(--slate-100)';
+                } else {
+                    prixInput.readOnly = false;
+                    prixInput.style.backgroundColor = '';
+                }
             }
             
             calculateTotal();

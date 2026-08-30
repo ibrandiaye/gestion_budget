@@ -328,11 +328,19 @@
 
             document.getElementById('fournisseurNom').value = option.getAttribute('data-nom');
             
-            const fArticles = JSON.parse(option.getAttribute('data-articles') || '[]');
-            if (fArticles && fArticles.length > 0) {
-                currentCompteArticles = fArticles;
+            // Extract articles from the option and update currentCompteArticles
+            const articlesAttr = option.getAttribute('data-articles');
+            if (articlesAttr) {
+                const fArticles = JSON.parse(articlesAttr);
+                if (fArticles && fArticles.length > 0) {
+                    currentCompteArticles = fArticles;
+                } else {
+                    currentCompteArticles = [];
+                }
+            } else {
+                currentCompteArticles = [];
             }
-
+            
             // Add first article line
             addArticleLine();
         }
@@ -349,8 +357,7 @@
                 addArticleLine();
             }
         }
-    </script>
-    <script>
+
         function addArticleLine(existingData = null) {
             const container = document.getElementById('articlesContainer');
             const index = articleCount++;
