@@ -34,6 +34,10 @@ class EngagementController extends Controller
     {
         $comptes = Compte::where('etat', 'actif')
             ->whereNotNull('compte_parent_id')
+            ->where(function($q) {
+                $q->where('is_marche', false)->orWhereNull('is_marche');
+            })
+            ->orderBy('numero')
             ->get();
         
         $budget = Budget::whereIn('statut', ['brouillon', 'actif'])->latest('annee')->first();
@@ -54,6 +58,13 @@ class EngagementController extends Controller
             'montant' => 'required|numeric|min:1',
             'nom_fournisseur' => 'nullable|string|max:191',
         ]);
+
+        $compte = Compte::findOrFail($request->compte_id);
+        if ($compte->is_marche) {
+            return back()->withErrors([
+                'compte_id' => "Les lignes budgétaires à marché ne peuvent pas être utilisées pour un engagement direct. Veuillez sélectionner une ligne budgétaire à engagement direct."
+            ])->withInput();
+        }
 
         $budget = Budget::whereIn('statut', ['brouillon', 'actif'])->latest('annee')->first();
         if (!$budget) {

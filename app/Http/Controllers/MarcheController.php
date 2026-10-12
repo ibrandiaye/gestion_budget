@@ -19,9 +19,13 @@ class MarcheController extends Controller
 
     public function create()
     {
-        $comptes = Compte::with(['articles' => fn($q) => $q->where('actif', true)])->get();
+        $comptes = Compte::where('is_marche', true)
+            ->where('etat', 'actif')
+            ->with(['articles' => fn($q) => $q->where('actif', true)])
+            ->orderBy('numero')
+            ->get();
         $budgets = Budget::all();
-        $fournisseurs = Fournisseur::all();
+        $fournisseurs = Fournisseur::with('articles')->orderBy('nom')->get();
         return view('marches.create', compact('comptes', 'budgets', 'fournisseurs'));
     }
 
@@ -41,6 +45,13 @@ class MarcheController extends Controller
             'articles.*.quantite' => 'required|integer|min:1',
             'articles.*.prix_unitaire' => 'required|numeric|min:0',
         ]);
+
+        $compte = Compte::findOrFail($request->compte_id);
+        if (!$compte->is_marche) {
+            return back()->withErrors([
+                'compte_id' => "Les lignes budgétaires à engagement direct ne peuvent pas être utilisées pour un marché. Veuillez sélectionner une ligne budgétaire à marché."
+            ])->withInput();
+        }
 
         // Calculate total amount securely in the backend
         $montant_calcule = 0;
@@ -88,9 +99,15 @@ class MarcheController extends Controller
     public function edit(Marche $marche)
     {
         $marche->load(['compte.articles', 'fournisseur', 'articles']);
-        $comptes = Compte::with(['articles' => fn($q) => $q->where('actif', true)])->get();
+        $comptes = Compte::where('etat', 'actif')
+            ->where(function($q) use ($marche) {
+                $q->where('is_marche', true)->orWhere('id', $marche->compte_id);
+            })
+            ->with(['articles' => fn($q) => $q->where('actif', true)])
+            ->orderBy('numero')
+            ->get();
         $budgets = Budget::all();
-        $fournisseurs = Fournisseur::all();
+        $fournisseurs = Fournisseur::with('articles')->orderBy('nom')->get();
 
         // Resolve each marche article's corresponding article_id in the compte (if any)
         foreach ($marche->articles as $art) {
@@ -119,6 +136,13 @@ class MarcheController extends Controller
             'articles.*.quantite' => 'required|integer|min:1',
             'articles.*.prix_unitaire' => 'required|numeric|min:0',
         ]);
+
+        $compte = Compte::findOrFail($request->compte_id);
+        if (!$compte->is_marche) {
+            return back()->withErrors([
+                'compte_id' => "Les lignes budgétaires à engagement direct ne peuvent pas être utilisées pour un marché. Veuillez sélectionner une ligne budgétaire à marché."
+            ])->withInput();
+        }
 
         $montant_calcule = 0;
         foreach ($request->articles as $art) {

@@ -35,12 +35,12 @@
             @endif
 
             <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Compte d'imputation *</label>
+                <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Compte d'imputation (Ligne à engagement direct) *</label>
                 <select name="compte_id" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                    <option value="">Sélectionner le compte budgétaire</option>
+                    <option value="">Sélectionner un compte à engagement direct...</option>
                     @foreach($comptes as $compte)
                         @php
-                            $dot = $budget ? $compte->getDotationForBudget($budget->id) : 0;
+                            $dot = $budget ? ($compte->getDotationForBudget($budget->id) ?: $compte->lignesBudget()->where('budget_id', $budget->id)->sum('montant_alloue')) : 0;
                             
                             $totalEngage = \App\Models\Engagement::where(function($query) use ($budget, $compte) {
                                 $query->where(function($q) use ($budget, $compte) {
@@ -50,7 +50,7 @@
                                     $q->where('budget_id', $budget->id)
                                       ->where('compte_id', $compte->id);
                                 });
-                            })->sum('montant');
+                            })->where('statut', '!=', 'rejete')->sum('montant');
                             
                             $disp = $dot - $totalEngage;
                         @endphp
@@ -61,6 +61,11 @@
                         @endif
                     @endforeach
                 </select>
+                @if($comptes->isEmpty())
+                    <small style="color: #dc2626; display: block; margin-top: 0.35rem;">
+                        ⚠️ Aucun compte à engagement direct configuré.
+                    </small>
+                @endif
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">

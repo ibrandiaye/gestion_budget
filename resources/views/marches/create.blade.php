@@ -66,13 +66,18 @@
                 </div>
                 
                 <div>
-                    <label>Compte d'imputation</label>
+                    <label>Compte d'imputation (Ligne à marché) *</label>
                     <select name="compte_id" id="compteSelect" required class="form-control">
-                        <option value="">Sélectionnez un compte...</option>
+                        <option value="">Sélectionnez un compte à marché...</option>
                         @foreach($comptes as $compte)
-                            <option value="{{ $compte->id }}" data-articles="{{ json_encode($compte->articles) }}">{{ $compte->numero }} - {{ $compte->libelle }}</option>
+                            <option value="{{ $compte->id }}" data-articles='@json($compte->articles)'>{{ $compte->numero }} - {{ $compte->libelle }}</option>
                         @endforeach
                     </select>
+                    @if($comptes->isEmpty())
+                        <small style="color: #dc2626; display: block; margin-top: 0.35rem;">
+                            ⚠️ Aucun compte à marché configuré. Vous devez d'abord cocher "Compte à marché" dans la gestion des comptes.
+                        </small>
+                    @endif
                 </div>
 
                 <div>
@@ -104,10 +109,10 @@
 
                 <div>
                     <label>Fournisseur (Titulaire)</label>
-                    <select name="fournisseur_id" required class="form-control">
+                    <select name="fournisseur_id" id="fournisseurSelect" required class="form-control" onchange="onFournisseurChange()">
                         <option value="">Sélectionnez un fournisseur...</option>
                         @foreach($fournisseurs as $fournisseur)
-                            <option value="{{ $fournisseur->id }}">{{ $fournisseur->nom }}</option>
+                            <option value="{{ $fournisseur->id }}" data-articles='@json($fournisseur->articles)'>{{ $fournisseur->nom }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -124,7 +129,7 @@
                 <div class="article-row" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 1rem; margin-bottom: 1rem; align-items: end;">
                     <div>
                         <label>Article</label>
-                        <select name="articles[0][article_id]" required class="form-control article-select">
+                        <select name="articles[0][article_id]" required class="form-control article-select" onchange="onArticleChange(this)">
                             <option value="">Sélectionnez d'abord un compte...</option>
                         </select>
                     </div>
@@ -138,7 +143,7 @@
                     </div>
                     <div>
                         <label>Prix Unitaire</label>
-                        <input type="number" name="articles[0][prix_unitaire]" required class="form-control" min="0">
+                        <input type="number" name="articles[0][prix_unitaire]" required class="form-control" min="0" placeholder="0">
                     </div>
                     <div>
                         <button type="button" class="btn-danger remove-article" style="display: none;">X</button>
@@ -155,18 +160,96 @@
     </div>
 
     <script>
+        function getSelectedSupplierPrices() {
+            const fSelect = document.getElementById('fournisseurSelect');
+            if (!fSelect || fSelect.selectedIndex < 0) return {};
+            const fOption = fSelect.options[fSelect.selectedIndex];
+            if (!fOption || !fOption.value) return {};
+            try {
+                const articles = JSON.parse(fOption.getAttribute('data-articles') || '[]');
+                const map = {};
+                articles.forEach(a => {
+                    if (a.pivot && a.pivot.prix !== undefined) {
+                        map[a.id] = parseFloat(a.pivot.prix);
+                    }
+                });
+                return map;
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function updateArticleDropdown(select, selectedArticleId = null) {
+            const compteSelect = document.getElementById('compteSelect');
+            const cOption = compteSelect.options[compteSelect.selectedIndex];
+            const compteArticles = (cOption && cOption.value) ? JSON.parse(cOption.getAttribute('data-articles') || '[]') : [];
+            const supplierPrices = getSelectedSupplierPrices();
+
+            if (!cOption || !cOption.value) {
+                select.innerHTML = '<option value="">Sélectionnez d\'abord un compte...</option>';
+                return;
+            }
+
+            let optionsHtml = '<option value="">Choisir un article...</option>';
+            compteArticles.forEach(a => {
+                const prix = supplierPrices[a.id];
+                const prixText = (prix !== undefined && prix > 0) ? ` (${new Intl.NumberFormat().format(prix)} FCFA)` : '';
+                const isSel = (selectedArticleId && selectedArticleId == a.id) ? 'selected' : '';
+                optionsHtml += `<option value="${a.id}" data-prix="${prix !== undefined ? prix : ''}" ${isSel}>${a.designation}${prixText}</option>`;
+            });
+            select.innerHTML = optionsHtml;
+        }
+
+        function onArticleChange(select) {
+            const row = select.closest('.article-row');
+            const prixInput = row.querySelector('input[name$="[prix_unitaire]"]');
+            const articleId = select.value;
+            const supplierPrices = getSelectedSupplierPrices();
+
+            if (articleId && supplierPrices[articleId] !== undefined) {
+                prixInput.value = supplierPrices[articleId];
+            }
+            calculateTotal();
+        }
+
+        function onFournisseurChange() {
+            const supplierPrices = getSelectedSupplierPrices();
+
+            document.querySelectorAll('.article-row').forEach(row => {
+                const select = row.querySelector('.article-select');
+                const prixInput = row.querySelector('input[name$="[prix_unitaire]"]');
+                const currentArticleId = select ? select.value : null;
+
+                if (select) {
+                    updateArticleDropdown(select, currentArticleId);
+                }
+
+                if (currentArticleId && supplierPrices[currentArticleId] !== undefined) {
+                    prixInput.value = supplierPrices[currentArticleId];
+                }
+            });
+
+            calculateTotal();
+        }
+
         document.getElementById('add-article').addEventListener('click', function() {
             const container = document.getElementById('articles-container');
             const rowCount = container.children.length;
             
             const newRow = container.children[0].cloneNode(true);
             newRow.querySelectorAll('input, select').forEach(el => {
-                el.name = el.name.replace(/\[0\]/, `[${rowCount}]`);
+                el.name = el.name.replace(/\[\d+\]/, `[${rowCount}]`);
                 if (el.tagName === 'INPUT') {
                     if (el.type !== 'number' || el.name.includes('prix')) el.value = '';
                     if (el.name.includes('quantite')) el.value = '1';
                 }
             });
+
+            const select = newRow.querySelector('.article-select');
+            if (select) {
+                updateArticleDropdown(select);
+                select.value = '';
+            }
             
             newRow.querySelector('.remove-article').style.display = 'block';
             newRow.querySelector('.remove-article').addEventListener('click', function() {
@@ -193,22 +276,44 @@
 
         document.getElementById('articles-container').addEventListener('input', calculateTotal);
         
-        document.getElementById('compteSelect').addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const articles = selectedOption.value ? JSON.parse(selectedOption.getAttribute('data-articles') || '[]') : [];
+        async function loadFournisseurs(compteId) {
+            const fSelect = document.getElementById('fournisseurSelect');
+            if (!fSelect || !compteId) return;
+            const currentSelected = fSelect.value;
             
-            let optionsHtml = '<option value="">Choisir un article...</option>';
-            articles.forEach(a => {
-                optionsHtml += `<option value="${a.id}">${a.designation}</option>`;
-            });
-            
-            if (!selectedOption.value) {
-                optionsHtml = '<option value="">Sélectionnez d\'abord un compte...</option>';
+            try {
+                let url = "{{ route('api.fournisseurs.compte', ':id') }}".replace(':id', compteId);
+                const response = await fetch(url);
+                if (response.ok) {
+                    const fournisseurs = await response.json();
+                    if (Array.isArray(fournisseurs) && fournisseurs.length > 0) {
+                        let html = '<option value="">Sélectionnez un fournisseur...</option>';
+                        fournisseurs.forEach(f => {
+                            const isSel = (currentSelected && currentSelected == f.id) ? 'selected' : '';
+                            html += `<option value="${f.id}" data-articles='${JSON.stringify(f.articles || [])}' ${isSel}>${f.nom}</option>`;
+                        });
+                        fSelect.innerHTML = html;
+                        onFournisseurChange();
+                    }
+                }
+            } catch (e) {
+                console.error('Erreur chargement fournisseurs:', e);
             }
+        }
 
-            document.querySelectorAll('.article-select').forEach(select => {
-                select.innerHTML = optionsHtml;
+        document.getElementById('compteSelect').addEventListener('change', function() {
+            if (this.value) {
+                loadFournisseurs(this.value);
+            }
+            document.querySelectorAll('.article-row').forEach(row => {
+                const select = row.querySelector('.article-select');
+                if (select) {
+                    updateArticleDropdown(select);
+                }
+                const prixInput = row.querySelector('input[name$="[prix_unitaire]"]');
+                if (prixInput) prixInput.value = '';
             });
+            calculateTotal();
         });
     </script>
 @endsection

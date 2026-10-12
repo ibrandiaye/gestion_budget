@@ -83,7 +83,9 @@
                                         <span style="font-weight: 600;">{{ $compte->libelle }}</span>
                                         
                                         @if($compte->is_marche)
-                                            <span style="font-size: 0.7rem; background: var(--warning); color: white; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.5rem;">À MARCHÉ</span>
+                                            <span style="font-size: 0.7rem; background: #f59e0b; color: white; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.5rem; font-weight: 700;">À MARCHÉ</span>
+                                        @else
+                                            <span style="font-size: 0.7rem; background: #0284c7; color: white; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.5rem; font-weight: 700;">ENGAGEMENT DIRECT</span>
                                         @endif
                                         <span style="font-size: 0.75rem; margin-left: 0.5rem; color: {{ $compte->etat === 'actif' ? 'var(--success)' : 'var(--danger)' }};">
                                             {{ ucfirst($compte->etat) }}
@@ -148,6 +150,7 @@
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                         <input type="checkbox" name="is_marche" style="width: 1rem; height: 1rem;">
                         <span style="font-weight: 500;">Compte à marché</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">(décoché = Engagement direct)</span>
                     </label>
                 </div>
                 <div style="margin-bottom: 1rem;">
@@ -216,6 +219,7 @@
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                         <input type="checkbox" id="edit_is_marche" name="is_marche" style="width: 1rem; height: 1rem;">
                         <span style="font-weight: 500;">Compte à marché</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">(décoché = Engagement direct)</span>
                     </label>
                 </div>
                 <div style="margin-bottom: 1rem;">

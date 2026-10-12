@@ -122,20 +122,14 @@ class FournisseurController extends Controller
      */
     public function pourCompte(Compte $compte)
     {
-        $articleIds = $compte->articles()->pluck('id');
-        
-        if ($articleIds->isEmpty()) {
-            $fournisseurs = Fournisseur::actif()->with('articles')->get();
-        } else {
-            $fournisseurs = Fournisseur::actif()
-                ->whereHas('articles', function ($q) use ($articleIds) {
-                    $q->whereIn('articles.id', $articleIds);
-                })
-                ->with(['articles' => function ($q) use ($articleIds) {
-                    $q->whereIn('articles.id', $articleIds);
-                }])
-                ->get();
-        }
+        $fournisseurs = Fournisseur::where(function ($q) {
+                $q->where('actif', true)->orWhereNull('actif');
+            })
+            ->with(['articles' => function ($q) {
+                $q->withPivot('prix');
+            }])
+            ->orderBy('nom')
+            ->get();
 
         return response()->json($fournisseurs);
     }

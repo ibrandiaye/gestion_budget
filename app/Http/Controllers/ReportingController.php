@@ -84,54 +84,78 @@ class ReportingController extends Controller
         }
     }
 
-    public function parCompte()
+    public function parCompte(Request $request)
     {
-        $budget = \App\Models\Budget::where('statut', 'actif')->first();
+        $budgets = \App\Models\Budget::orderByDesc('annee')->get();
+        $budget = $request->filled('budget_id')
+            ? \App\Models\Budget::find($request->budget_id)
+            : (\App\Models\Budget::where('statut', 'actif')->first() ?: $budgets->first());
 
-        // Recuperer tous les comptes actifs (feuilles)
+        // Récupérer tous les comptes actifs (feuilles)
         $comptes = \App\Models\Compte::where('etat', 'actif')
             ->whereNotNull('compte_parent_id')
             ->with(['compteParent'])
             ->get();
 
         $statsComptes = $comptes->map(function ($compte) use ($budget) {
-            
-            $total_alloue = 0;
-            if ($budget) {
-                $total_alloue = $compte->getDotationForBudget($budget->id);
-            } else {
-                 // Fallback if no active budget, maybe show latest? or 0.
-                 // For now 0 is safe or we can keep old behavior if needed, but old behavior was static.
-                 // Let's assume 0 if no budget context.
-                 $total_alloue = 0; 
-            }
-            
+            $dotation_initiale = 0;
+            $virement = 0;
+            $reamenagement = 0;
             $total_commandes = 0;
             $total_engage = 0;
 
             if ($budget) {
-                // Somme des commandes pour ce compte et ce budget
-                $total_commandes = \App\Models\Commande::where('budget_id', $budget->id)
+                // Dotation initiale (dotation spécifique ou somme des dotations des lignes)
+                $dotation_initiale = (float) ($compte->getDotationForBudget($budget->id) ?: $compte->lignesBudget()->where('budget_id', $budget->id)->sum('montant_alloue'));
+
+                // Virements nets (reçus - émis)
+                $virements_recus = (float) \App\Models\Ajustement::where('budget_id', $budget->id)
+                    ->whereHas('destLigne', fn($q) => $q->where('compte_id', $compte->id))
+                    ->sum('montant');
+                $virements_emis = (float) \App\Models\Ajustement::where('budget_id', $budget->id)
+                    ->whereHas('sourceLigne', fn($q) => $q->where('compte_id', $compte->id))
+                    ->sum('montant');
+                $virement = $virements_recus - $virements_emis;
+
+                // Réaménagement
+                $reamenagement = 0;
+
+                // Somme des commandes non rejetées
+                $total_commandes = (float) \App\Models\Commande::where('budget_id', $budget->id)
                     ->where('compte_id', $compte->id)
+                    ->where('statut', '!=', 'rejete')
                     ->sum('montant_ttc');
 
-                // Somme des engagements pour ce compte et ce budget (via commandes)
-                $total_engage = \App\Models\Engagement::whereHas('commande', function($q) use ($budget, $compte) {
-                    $q->where('budget_id', $budget->id)
-                      ->where('compte_id', $compte->id);
-                })->sum('montant');
+                // Somme des engagements non rejetés (directs ou via commandes)
+                $total_engage = (float) \App\Models\Engagement::where(function($q) use ($budget, $compte) {
+                    $q->where(function($q1) use ($budget, $compte) {
+                        $q1->where('budget_id', $budget->id)
+                           ->where('compte_id', $compte->id);
+                    })->orWhereHas('commande', function($q2) use ($budget, $compte) {
+                        $q2->where('budget_id', $budget->id)
+                           ->where('compte_id', $compte->id);
+                    });
+                })->where('statut', '!=', 'rejete')->sum('montant');
             }
 
-            // Structure pour la vue
+            $dotation_totale = $dotation_initiale + $virement + $reamenagement;
+            $disponible_commande = $dotation_totale - $total_commandes;
+            $disponible_engage = $dotation_totale - $total_engage;
+
             return (object) [
                 'compte' => $compte,
-                'total_alloue' => $total_alloue,
+                'dotation_initiale' => $dotation_initiale,
+                'virement' => $virement,
+                'reamenagement' => $reamenagement,
+                'dotation_totale' => $dotation_totale,
                 'total_commandes' => $total_commandes,
+                'disponible_commande' => $disponible_commande,
                 'total_engage' => $total_engage,
+                'disponible_engage' => $disponible_engage,
             ];
         })->sortBy('compte.numero');
 
-        return view('reporting.accounts', compact('statsComptes'));
+        return view('reporting.accounts', compact('statsComptes', 'budget', 'budgets'));
     }
     public function exportBesoinsByService()
     {
@@ -192,39 +216,81 @@ class ReportingController extends Controller
         return $this->exportToCsv('budget_par_service.csv', $headers, $data);
     }
 
-    public function exportBudgetByCompte()
+    public function exportBudgetByCompte(Request $request)
     {
-        $headers = ['Compte Numero', 'Compte Libelle', 'Montant Affecté', 'Total Engage'];
+        $headers = [
+            'Compte et libellé',
+            'Dotation Initiale',
+            'Virement',
+            'Réaménagement',
+            'Dotation Totale',
+            'Commande Total',
+            'Commande Disponible',
+            'Engagement Total',
+            'Engagement Disponible'
+        ];
         
-        $budget = \App\Models\Budget::where('statut', 'actif')->first();
+        $budgets = \App\Models\Budget::orderByDesc('annee')->get();
+        $budget = $request->filled('budget_id')
+            ? \App\Models\Budget::find($request->budget_id)
+            : (\App\Models\Budget::where('statut', 'actif')->first() ?: $budgets->first());
         
         $comptes = \App\Models\Compte::where('etat', 'actif')
             ->whereNotNull('compte_parent_id')
             ->get();
             
         $data = $comptes->map(function ($compte) use ($budget) {
-            $alloue = 0;
-            if ($budget) {
-                $alloue = $compte->getDotationForBudget($budget->id);
-            }
-            $engage = 0;
-            
-            if ($budget) {
-                $engage = \App\Models\Engagement::whereHas('commande', function($q) use ($budget, $compte) {
-                    $q->where('budget_id', $budget->id)
-                      ->where('compte_id', $compte->id);
-                })->sum('montant');
-            }
-            
-            return [
-                $compte->numero,
-                $compte->libelle,
-                $alloue,
-                $engage
-            ];
-        })->sortBy(0); // Sort by numero (index 0)
+            $dotation_initiale = 0;
+            $virement = 0;
+            $reamenagement = 0;
+            $total_commandes = 0;
+            $total_engage = 0;
 
-        return $this->exportToCsv('budget_par_compte.csv', $headers, $data);
+            if ($budget) {
+                $dotation_initiale = (float) ($compte->getDotationForBudget($budget->id) ?: $compte->lignesBudget()->where('budget_id', $budget->id)->sum('montant_alloue'));
+
+                $virements_recus = (float) \App\Models\Ajustement::where('budget_id', $budget->id)
+                    ->whereHas('destLigne', fn($q) => $q->where('compte_id', $compte->id))
+                    ->sum('montant');
+                $virements_emis = (float) \App\Models\Ajustement::where('budget_id', $budget->id)
+                    ->whereHas('sourceLigne', fn($q) => $q->where('compte_id', $compte->id))
+                    ->sum('montant');
+                $virement = $virements_recus - $virements_emis;
+
+                $total_commandes = (float) \App\Models\Commande::where('budget_id', $budget->id)
+                    ->where('compte_id', $compte->id)
+                    ->where('statut', '!=', 'rejete')
+                    ->sum('montant_ttc');
+
+                $total_engage = (float) \App\Models\Engagement::where(function($q) use ($budget, $compte) {
+                    $q->where(function($q1) use ($budget, $compte) {
+                        $q1->where('budget_id', $budget->id)
+                           ->where('compte_id', $compte->id);
+                    })->orWhereHas('commande', function($q2) use ($budget, $compte) {
+                        $q2->where('budget_id', $budget->id)
+                           ->where('compte_id', $compte->id);
+                    });
+                })->where('statut', '!=', 'rejete')->sum('montant');
+            }
+
+            $dotation_totale = $dotation_initiale + $virement + $reamenagement;
+            $disponible_commande = $dotation_totale - $total_commandes;
+            $disponible_engage = $dotation_totale - $total_engage;
+
+            return [
+                $compte->numero . ' - ' . $compte->libelle,
+                $dotation_initiale,
+                $virement,
+                $reamenagement,
+                $dotation_totale,
+                $total_commandes,
+                $disponible_commande,
+                $total_engage,
+                $disponible_engage,
+            ];
+        })->sortBy(0);
+
+        return $this->exportToCsv('budget_par_compte_' . ($budget ? $budget->annee : date('Y')) . '.csv', $headers, $data);
     }
     
     public function viewMSHP()
@@ -458,17 +524,18 @@ class ReportingController extends Controller
     {
         $callback = function () use ($headers, $data) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, $headers);
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM
+            fputcsv($file, $headers, ';');
 
             foreach ($data as $row) {
-                fputcsv($file, is_array($row) ? $row : $row->toArray());
+                fputcsv($file, is_array($row) ? $row : $row->toArray(), ';');
             }
 
             fclose($file);
         };
 
         return new StreamedResponse($callback, 200, [
-            "Content-Type" => "text/csv",
+            "Content-Type" => "text/csv; charset=UTF-8",
             "Content-Disposition" => "attachment; filename=\"$filename\"",
             "Pragma" => "no-cache",
             "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",

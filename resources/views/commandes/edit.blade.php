@@ -32,7 +32,7 @@
                             @foreach($comptes as $compte)
                                 <option value="{{ $compte->id }}" {{ $commande->compte_id == $compte->id ? 'selected' : '' }} 
                                     data-fournisseur-requis="{{ $compte->fournisseur_requis ? '1' : '0' }}"
-                                    data-articles="{{ json_encode($compte->articles) }}">
+                                    data-articles='@json($compte->articles)'>
                                     {{ $compte->numero }} - {{ $compte->libelle }}
                                 </option>
                             @endforeach
@@ -61,7 +61,7 @@
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                             <option value="">Sélectionner un marché...</option>
                             @foreach($marches ?? [] as $marche)
-                                <option value="{{ $marche->id }}" {{ $commande->marche_id == $marche->id ? 'selected' : '' }} data-details="{{ json_encode($marche) }}">{{ $marche->numero ?? $marche->intitule }}</option>
+                                <option value="{{ $marche->id }}" {{ $commande->marche_id == $marche->id ? 'selected' : '' }} data-details='@json($marche)'>{{ $marche->numero ?? $marche->intitule }}</option>
                             @endforeach
                         </select>
                         
@@ -233,9 +233,43 @@
                     </div>
                 `;
                 detailsDiv.style.display = 'block';
+
+                if (marche.compte_id) {
+                    const compteSelect = document.getElementById('compteSelect');
+                    if (compteSelect && (!compteSelect.value || compteSelect.value != marche.compte_id)) {
+                        compteSelect.value = marche.compte_id;
+                    }
+                }
+                const fournisseurNom = document.getElementById('fournisseurNom');
+                if (fournisseurNom && marche.fournisseur) {
+                    fournisseurNom.value = marche.fournisseur.nom;
+                }
+                const fournisseurSelect = document.getElementById('fournisseurSelect');
+                if (fournisseurSelect && marche.fournisseur_id) {
+                    fournisseurSelect.value = marche.fournisseur_id;
+                }
             } catch (e) {
                 console.error('Erreur parsing marche details:', e);
                 detailsDiv.style.display = 'none';
+            }
+        }
+
+        function getSelectedSupplierPrices() {
+            const fournisseurSelect = document.getElementById('fournisseurSelect');
+            if (!fournisseurSelect || fournisseurSelect.selectedIndex < 0) return {};
+            const option = fournisseurSelect.options[fournisseurSelect.selectedIndex];
+            if (!option || !option.value) return {};
+            try {
+                const fArticles = JSON.parse(option.getAttribute('data-articles') || '[]');
+                const map = {};
+                fArticles.forEach(a => {
+                    if (a.pivot && a.pivot.prix !== undefined) {
+                        map[a.id] = parseFloat(a.pivot.prix);
+                    }
+                });
+                return map;
+            } catch (e) {
+                return {};
             }
         }
 
@@ -281,7 +315,6 @@
             fournisseurSelect.setAttribute('required', 'required');
 
             try {
-                // Laravel route wrapper
                 let updateUrl = "{{ route('api.fournisseurs.compte', ':id') }}";
                 const response = await fetch(updateUrl.replace(':id', selectedCompteId));
                 const fournisseurs = await response.json();
@@ -291,19 +324,12 @@
 
                 fournisseurs.forEach(f => {
                     const selected = (isInit && f.nom === existingFournisseurName) ? 'selected' : '';
-                    options += `<option value="${f.id}" data-nom="${f.nom}" data-articles='${JSON.stringify(f.articles)}' ${selected}>${f.nom}</option>`;
+                    options += `<option value="${f.id}" data-nom="${f.nom}" data-articles='${JSON.stringify(f.articles || [])}' ${selected}>${f.nom}</option>`;
                 });
                 
                 fournisseurSelect.innerHTML = options;
                 
                 if (isInit) {
-                    const selectedOption = fournisseurSelect.options[fournisseurSelect.selectedIndex];
-                    if (selectedOption && selectedOption.value) {
-                        const fArticles = JSON.parse(selectedOption.getAttribute('data-articles') || '[]');
-                        if (fArticles && fArticles.length > 0) {
-                            currentCompteArticles = fArticles;
-                        }
-                    }
                     populateExistingArticles();
                 } else {
                     addArticleLine();
@@ -318,31 +344,40 @@
             const fournisseurSelect = document.getElementById('fournisseurSelect');
             const option = fournisseurSelect.options[fournisseurSelect.selectedIndex];
             
-            document.getElementById('articlesContainer').innerHTML = '';
-            articleCount = 0;
-            
             if (!option.value) {
                 document.getElementById('fournisseurNom').value = '';
                 return;
             }
 
-            document.getElementById('fournisseurNom').value = option.getAttribute('data-nom');
-            
-            // Extract articles from the option and update currentCompteArticles
-            const articlesAttr = option.getAttribute('data-articles');
-            if (articlesAttr) {
-                const fArticles = JSON.parse(articlesAttr);
-                if (fArticles && fArticles.length > 0) {
-                    currentCompteArticles = fArticles;
-                } else {
-                    currentCompteArticles = [];
-                }
+            document.getElementById('fournisseurNom').value = option.getAttribute('data-nom') || '';
+            const supplierPriceMap = getSelectedSupplierPrices();
+
+            const existingLines = document.querySelectorAll('.article-line');
+            if (existingLines.length === 0) {
+                addArticleLine();
             } else {
-                currentCompteArticles = [];
+                existingLines.forEach(line => {
+                    const select = line.querySelector('.article-select');
+                    const prixInput = line.querySelector('.prix-input');
+                    const currentVal = select ? select.value : null;
+
+                    if (select) {
+                        let opts = '<option value="">Choisir article...</option>';
+                        currentCompteArticles.forEach(a => {
+                            const prix = supplierPriceMap[a.id] !== undefined ? supplierPriceMap[a.id] : (a.pivot ? a.pivot.prix : 0);
+                            const priceText = (prix > 0) ? ` (${new Intl.NumberFormat().format(prix)} FCFA)` : '';
+                            const isSel = (currentVal == a.id) ? 'selected' : '';
+                            opts += `<option value="${a.id}" data-designation="${a.designation}" data-prix="${prix}" ${isSel}>${a.designation}${priceText}</option>`;
+                        });
+                        select.innerHTML = opts;
+                    }
+
+                    if (currentVal && supplierPriceMap[currentVal] !== undefined) {
+                        prixInput.value = supplierPriceMap[currentVal];
+                    }
+                });
+                calculateTotal();
             }
-            
-            // Add first article line
-            addArticleLine();
         }
 
         function populateExistingArticles() {
@@ -367,12 +402,22 @@
             div.id = 'article-line-' + index;
             div.style.cssText = 'display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 0.5rem; align-items: end; padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;';
 
+            const supplierPriceMap = getSelectedSupplierPrices();
+
             let articleOptions = '<option value="">Choisir article...</option>';
             currentCompteArticles.forEach(a => {
-                const selected = (existingData && existingData.article_id == a.id) ? 'selected' : '';
-                const prix = a.pivot ? a.pivot.prix : 0;
-                articleOptions += `<option value="${a.id}" data-designation="${a.designation}" data-prix="${prix}" ${selected}>${a.designation}</option>`;
+                const selected = (existingData && (existingData.article_id == a.id || existingData.designation == a.designation)) ? 'selected' : '';
+                const prix = supplierPriceMap[a.id] !== undefined ? supplierPriceMap[a.id] : (a.pivot ? a.pivot.prix : 0);
+                const priceText = (prix > 0) ? ` (${new Intl.NumberFormat().format(prix)} FCFA)` : '';
+                articleOptions += `<option value="${a.id}" data-designation="${a.designation}" data-prix="${prix}" ${selected}>${a.designation}${priceText}</option>`;
             });
+
+            let defaultPrix = 0;
+            if (existingData && existingData.prix_unitaire !== undefined) {
+                defaultPrix = existingData.prix_unitaire;
+            } else if (existingData && existingData.article_id && supplierPriceMap[existingData.article_id] !== undefined) {
+                defaultPrix = supplierPriceMap[existingData.article_id];
+            }
 
             div.innerHTML = `
                 <div>
@@ -389,13 +434,13 @@
                 </div>
                 <div>
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Quantité *</label>
-                    <input type="number" name="articles[${index}][quantite]" required min="1" value="${existingData ? existingData.quantite : 1}" onchange="calculateTotal()" class="qte-input"
+                    <input type="number" name="articles[${index}][quantite]" required min="1" value="${existingData ? existingData.quantite : 1}" onchange="calculateTotal()" oninput="calculateTotal()" class="qte-input"
                         style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: center;">
                 </div>
                 <div>
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Prix Unitaire *</label>
-                    <input type="number" name="articles[${index}][prix_unitaire]" required min="0" value="${existingData ? existingData.prix_unitaire : 0}" onchange="calculateTotal()" class="prix-input"
-                        ${fournisseurRequis ? 'readonly style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right; background: var(--slate-100);"' : 'style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right;"'}>
+                    <input type="number" name="articles[${index}][prix_unitaire]" required min="0" value="${defaultPrix}" onchange="calculateTotal()" oninput="calculateTotal()" class="prix-input"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; text-align: right;">
                 </div>
                 <div>
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Montant HT</label>
@@ -422,26 +467,16 @@
             const option = select.options[select.selectedIndex];
             const line = select.closest('.article-line');
             const prixInput = line.querySelector('.prix-input');
+            const supplierPriceMap = getSelectedSupplierPrices();
             
             if (option.value) {
-                const prix = parseFloat(option.getAttribute('data-prix')) || 0;
-                prixInput.value = prix;
-                if (fournisseurRequis) {
-                    prixInput.readOnly = true;
-                    prixInput.style.backgroundColor = 'var(--slate-100)';
-                } else {
-                    prixInput.readOnly = false;
-                    prixInput.style.backgroundColor = '';
+                let prix = supplierPriceMap[option.value];
+                if (prix === undefined) {
+                    prix = parseFloat(option.getAttribute('data-prix')) || 0;
                 }
+                prixInput.value = prix;
             } else {
                 prixInput.value = 0;
-                if (fournisseurRequis) {
-                    prixInput.readOnly = true;
-                    prixInput.style.backgroundColor = 'var(--slate-100)';
-                } else {
-                    prixInput.readOnly = false;
-                    prixInput.style.backgroundColor = '';
-                }
             }
             
             calculateTotal();
