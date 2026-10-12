@@ -199,6 +199,11 @@
                         {{ session('success') }}
                     </div>
                 @endif
+                @if(session('error'))
+                    <div style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+                        {{ session('error') }}
+                    </div>
+                @endif
 
                 @yield('content')
             </div>

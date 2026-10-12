@@ -3,35 +3,199 @@
 @section('title', 'Détail Commande')
 
 @section('content')
-    <a href="{{ route('commandes.index') }}" style="display: inline-block; margin-bottom: 1.5rem; color: var(--text-muted); text-decoration: none;">
-        ← Retour à la liste
-    </a>
+    <style>
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            border: 1px solid transparent;
+            font-family: inherit;
+        }
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .btn-action-modifier {
+            background: #fef9c3;
+            color: #92400e;
+            border-color: #fde68a;
+        }
+        .btn-action-modifier:hover {
+            background: #fef08a;
+            border-color: #facc15;
+            color: #854d0e;
+        }
+        .btn-action-supprimer {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+        .btn-action-supprimer:hover {
+            background: #fecaca;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        .btn-action-imprimer {
+            background: var(--primary-600, #0d9488);
+            color: white;
+            border-color: transparent;
+        }
+        .btn-action-imprimer:hover {
+            background: var(--primary-700, #0f766e);
+            color: white;
+        }
+        .btn-action-imprimer-brouillon {
+            background: #e0f2fe;
+            color: #0369a1;
+            border-color: #bae6fd;
+        }
+        .btn-action-imprimer-brouillon:hover {
+            background: #bae6fd;
+            color: #0c4a6e;
+        }
+        .btn-action-reception {
+            background: #eff6ff;
+            color: #1e40af;
+            border-color: #bfdbfe;
+        }
+        .btn-action-reception:hover {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1e3a8a;
+        }
+        .btn-action-secondary {
+            background: white;
+            color: #334155;
+            border-color: var(--border-color, #e2e8f0);
+        }
+        .btn-action-secondary:hover {
+            background: var(--slate-50, #f8fafc);
+            color: #0f172a;
+        }
+        .btn-action-warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-color: #fde68a;
+        }
+        .btn-action-warning:hover {
+            background: #fde68a;
+            color: #78350f;
+        }
+        .btn-action-primary {
+            background: var(--primary-600, #0d9488);
+            color: white;
+            border-color: transparent;
+        }
+        .btn-action-primary:hover {
+            background: var(--primary-700, #0f766e);
+            color: white;
+        }
+    </style>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="margin: 0;">📦 Commande N° {{ $commande->numero }}</h2>
+            <div style="margin-top: 0.3rem; display: flex; gap: 1rem; align-items: center; font-size: 0.9rem;">
+                <a href="{{ route('commandes.index') }}" style="color: var(--text-muted); text-decoration: none;">
+                    ← Retour à la liste
+                </a>
+                <span style="color: var(--border-color);">|</span>
+                <span style="color: var(--text-muted);">Date : <strong>{{ $commande->date->format('d/m/Y') }}</strong></span>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            @if($commande->statut === 'valide')
+                <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-action btn-action-imprimer">
+                    🖨️ Imprimer le Bon
+                </a>
+                <a href="{{ route('pv-receptions.create', ['commande_id' => $commande->id]) }}" class="btn-action btn-action-reception">
+                    📦 Saisir Réception
+                </a>
+                @if($commande->engagement)
+                    <a href="{{ route('engagements.show', $commande->engagement) }}" class="btn-action btn-action-secondary">
+                        📄 Voir l'engagement →
+                    </a>
+                @endif
+            @else
+                <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-action btn-action-imprimer-brouillon">
+                    🖨️ Imprimer (Brouillon)
+                </a>
+            @endif
+
+            @if(in_array($commande->statut, ['brouillon', 'rejete']))
+                @if(Auth::user()->can('commandes.edit') || Auth::user()->role === 'admin')
+                    <a href="{{ route('commandes.edit', $commande) }}" class="btn-action btn-action-modifier">
+                        ✏️ Modifier
+                    </a>
+                @endif
+
+                @if(Auth::user()->can('commandes.delete') || Auth::user()->role === 'admin')
+                    <form action="{{ route('commandes.destroy', $commande) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette commande ? Cette action est irréversible.');" style="display: inline;">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-action btn-action-supprimer">
+                            🗑️ Supprimer
+                        </button>
+                    </form>
+                @endif
+
+                @if(Auth::user()->can('commandes.soumettre') || Auth::user()->role === 'admin')
+                    <form action="{{ route('commandes.soumettre', $commande) }}" method="POST" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn-action btn-action-primary">
+                            📤 Soumettre pour validation
+                        </button>
+                    </form>
+                @endif
+            @endif
+
+            @if($commande->statut === 'soumis')
+                <button type="button" onclick="refuserCommande()" class="btn-action btn-action-warning">
+                    ↩️ Renvoyer en brouillon
+                </button>
+                <form action="{{ route('commandes.finaliser', $commande) }}" method="POST" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="btn-action btn-action-primary">
+                        ✅ Finaliser la validation
+                    </button>
+                </form>
+            @endif
+        </div>
+    </div>
 
     @if ($errors->any())
         <div style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
             @foreach ($errors->all() as $error)
-                <p>{{ $error }}</p>
+                <p style="margin: 0 0 0.25rem 0;">⚠️ {{ $error }}</p>
             @endforeach
         </div>
     @endif
 
     <div class="card" style="margin-bottom: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <div>
-                <h2 style="margin-bottom: 0.5rem;">Commande {{ $commande->numero }}</h2>
-                <p style="color: var(--text-muted);">Date: {{ $commande->date->format('d/m/Y') }}</p>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Détail de la commande</h3>
+                <span style="color: var(--text-muted); font-size: 0.85rem;">Statut et progression du traitement</span>
             </div>
-            <div style="text-align: right;">
+            <div>
                 @php
                     $colors = [
-                        'brouillon' => 'background: var(--slate-200); color: var(--slate-700);',
-                        'soumis' => 'background: var(--warning); color: white;',
-                        'valide' => 'background: var(--success); color: white;',
-                        'rejete' => 'background: var(--danger); color: white;',
+                        'brouillon' => 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;',
+                        'soumis' => 'background: #fef3c7; color: #92400e; border: 1px solid #fde68a;',
+                        'valide' => 'background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;',
+                        'rejete' => 'background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;',
                     ];
                 @endphp
-                <span style="font-size: 0.9rem; padding: 0.4rem 0.8rem; border-radius: 4px; {{ $colors[$commande->statut] ?? '' }}">
-                    {{ ucfirst($commande->statut) }}
+                <span style="font-size: 0.85rem; font-weight: 700; padding: 0.35rem 0.9rem; border-radius: 99px; {{ $colors[$commande->statut] ?? '' }}">
+                    ● {{ ucfirst($commande->statut) }}
                 </span>
             </div>
         </div>
@@ -163,45 +327,63 @@
             </tfoot>
         </table>
 
-        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center; flex-wrap: wrap; padding-top: 1rem; border-top: 1px solid var(--border-color);">
             @if(in_array($commande->statut, ['brouillon', 'rejete']))
                 @if(Auth::user()->can('commandes.edit') || Auth::user()->role === 'admin')
-                    <a href="{{ route('commandes.edit', $commande) }}" class="btn-secondary" style="background: var(--slate-200); color: var(--slate-800);">✏️ Modifier</a>
+                    <a href="{{ route('commandes.edit', $commande) }}" class="btn-action btn-action-modifier">
+                        ✏️ Modifier
+                    </a>
                 @endif
 
                 @if(Auth::user()->can('commandes.delete') || Auth::user()->role === 'admin')
-                    <form action="{{ route('commandes.destroy', $commande) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette commande ?');">
+                    <form action="{{ route('commandes.destroy', $commande) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette commande ? Cette action est irréversible.');" style="display: inline;">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn-secondary" style="background: var(--danger); color: white; border: none;">🗑️ Supprimer</button>
+                        <button type="submit" class="btn-action btn-action-supprimer">
+                            🗑️ Supprimer
+                        </button>
                     </form>
                 @endif
 
                 @if(Auth::user()->can('commandes.soumettre') || Auth::user()->role === 'admin')
-                <form action="{{ route('commandes.soumettre', $commande) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn-primary">Soumettre pour validation</button>
-                </form>
+                    <form action="{{ route('commandes.soumettre', $commande) }}" method="POST" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn-action btn-action-primary">
+                            📤 Soumettre pour validation
+                        </button>
+                    </form>
                 @endif
             @endif
 
             @if($commande->statut === 'soumis')
-                <button type="button" onclick="refuserCommande()" class="btn-secondary" style="background: var(--warning); color: white; border: none;">Renvoyer en brouillon</button>
-                <form action="{{ route('commandes.finaliser', $commande) }}" method="POST">
+                <button type="button" onclick="refuserCommande()" class="btn-action btn-action-warning">
+                    ↩️ Renvoyer en brouillon
+                </button>
+                <form action="{{ route('commandes.finaliser', $commande) }}" method="POST" style="display: inline;">
                     @csrf
-                    <button type="submit" class="btn-primary">Finaliser la validation</button>
+                    <button type="submit" class="btn-action btn-action-primary">
+                        ✅ Finaliser la validation
+                    </button>
                 </form>
             @endif
 
             @if($commande->statut === 'valide')
-                <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-primary">📄 Imprimer le Bon</a>
+                <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-action btn-action-imprimer">
+                    🖨️ Imprimer le Bon
+                </a>
              
-                <a href="{{ route('pv-receptions.create', ['commande_id' => $commande->id]) }}" class="btn-secondary" style="background: var(--warning); color: white; border: none;">📦 Saisir Réception</a>
-                   @if($commande->engagement)
-                    <a href="{{ route('engagements.show', $commande->engagement) }}" class="btn-secondary">Voir l'engagement →</a>
+                <a href="{{ route('pv-receptions.create', ['commande_id' => $commande->id]) }}" class="btn-action btn-action-reception">
+                    📦 Saisir Réception
+                </a>
+                @if($commande->engagement)
+                    <a href="{{ route('engagements.show', $commande->engagement) }}" class="btn-action btn-action-secondary">
+                        📄 Voir l'engagement →
+                    </a>
                 @endif
             @else
-                <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-secondary">📄 Imprimer (Brouillon)</a>
+                <a href="{{ route('commandes.document', $commande) }}" target="_blank" class="btn-action btn-action-imprimer-brouillon">
+                    🖨️ Imprimer (Brouillon)
+                </a>
             @endif
         </div>
         

@@ -4,7 +4,7 @@
 
 @section('content')
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-        <h2>📝 Nouvel Engagement Direct (≤ 300 000 FCFA)</h2>
+        <h2>📝 Nouvel Engagement Direct</h2>
         <a href="{{ route('engagements.index') }}" style="color: var(--text-muted); text-decoration: none;">← Retour</a>
     </div>
 
@@ -80,8 +80,8 @@
             </div>
 
             <div style="margin-bottom: 2rem;">
-                <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Fournisseur / Bénéficiaire *</label>
-                <input type="text" name="nom_fournisseur" required value="{{ old('nom_fournisseur') }}" placeholder="Nom complet" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Fournisseur / Bénéficiaire <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: normal;">(facultatif)</span></label>
+                <input type="text" name="nom_fournisseur" value="{{ old('nom_fournisseur') }}" placeholder="Nom complet (facultatif)" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
             </div>
 
             <div style="display: flex; gap: 1rem;">

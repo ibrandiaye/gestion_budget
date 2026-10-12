@@ -29,4 +29,9 @@ class Marche extends Model
     {
         return $this->hasMany(MarcheArticle::class);
     }
+
+    public function commandes()
+    {
+        return $this->hasMany(Commande::class);
+    }
 }

@@ -61,8 +61,28 @@
                             @endif
                         </td>
                         <td style="padding: 0.75rem; text-align: center;">
-                            <a href="{{ route('mandats.show', $mandat) }}" style="color: var(--primary); text-decoration: none;">Voir</a>
-                            | <a href="{{ route('mandats.document', $mandat) }}" target="_blank" style="color: var(--success); text-decoration: none;">📄</a>
+                            <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+                                <a href="{{ route('mandats.show', $mandat) }}" class="btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; text-decoration: none;">
+                                    👁 Voir
+                                </a>
+                                <a href="{{ route('mandats.document', $mandat) }}" target="_blank" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; text-decoration: none; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 0.4rem;" title="Imprimer le mandat">
+                                    🖨️ Imprimer
+                                </a>
+                                @if(Auth::user()->can('mandats.edit') || Auth::user()->role === 'admin')
+                                    <a href="{{ route('mandats.edit', $mandat) }}" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; text-decoration: none; background: #fef9c3; color: #92400e; border-radius: 0.4rem; border: 1px solid #fde68a;" title="Modifier">
+                                        ✏️ Modifier
+                                    </a>
+                                @endif
+                                @if(Auth::user()->can('mandats.delete') || Auth::user()->role === 'admin')
+                                    <form action="{{ route('mandats.destroy', $mandat) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce mandat ? Cette action est irréversible.');" style="display: inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0.4rem; cursor: pointer;" title="Supprimer">
+                                            🗑 Supprimer
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @endforeach

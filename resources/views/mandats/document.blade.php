@@ -120,9 +120,9 @@
                 <p style="font-weight: bold; font-size: 12pt;">{{ $mandat->beneficiaire }}</p>
                 <p style="margin-top: 15px;"><strong>ENGAGEMENT</strong></p>
                 <p>NUMÉRO: {{ $mandat->engagement->numero ?? '-' }}</p>
-                <p>DATE: {{ $mandat->engagement->date->format('d/m/Y') ?? '-' }}</p>
+                <p>DATE: {{ $mandat->engagement?->date ? \Carbon\Carbon::parse($mandat->engagement->date)->format('d/m/Y') : '-' }}</p>
                 <p>MONTANT: {{ number_format($mandat->montant, 0, ',', ' ') }}</p>
-                <p>SERVICE: {{ $mandat->engagement->commande->service->nom ?? 'HALD' }}</p>
+                <p>SERVICE: {{ $mandat->engagement?->service?->nom ?? ($mandat->engagement?->commande?->service?->nom ?? 'HALD') }}</p>
             </div>
             <div class="box">
                 <h4>IMPUTATION BUDGÉTAIRE</h4>

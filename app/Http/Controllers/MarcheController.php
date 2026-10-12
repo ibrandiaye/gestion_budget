@@ -85,6 +85,90 @@ class MarcheController extends Controller
         return view('marches.show', compact('marche'));
     }
 
+    public function edit(Marche $marche)
+    {
+        $marche->load(['compte.articles', 'fournisseur', 'articles']);
+        $comptes = Compte::with(['articles' => fn($q) => $q->where('actif', true)])->get();
+        $budgets = Budget::all();
+        $fournisseurs = Fournisseur::all();
+
+        // Resolve each marche article's corresponding article_id in the compte (if any)
+        foreach ($marche->articles as $art) {
+            $matchingArticle = \App\Models\Article::where('compte_id', $marche->compte_id)
+                ->where('designation', $art->designation)
+                ->first();
+            $art->article_id = $matchingArticle ? $matchingArticle->id : null;
+        }
+
+        return view('marches.edit', compact('marche', 'comptes', 'budgets', 'fournisseurs'));
+    }
+
+    public function update(Request $request, Marche $marche)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'intitule' => 'required|string|max:255',
+            'compte_id' => 'required|exists:comptes,id',
+            'budget_id' => 'required|exists:budgets,id',
+            'nature' => 'required|string',
+            'type' => 'required|string',
+            'montant' => 'required|numeric',
+            'fournisseur_id' => 'required|exists:fournisseurs,id',
+            'articles' => 'required|array|min:1',
+            'articles.*.article_id' => 'required|exists:articles,id',
+            'articles.*.quantite' => 'required|integer|min:1',
+            'articles.*.prix_unitaire' => 'required|numeric|min:0',
+        ]);
+
+        $montant_calcule = 0;
+        foreach ($request->articles as $art) {
+            $montant_calcule += $art['quantite'] * $art['prix_unitaire'];
+        }
+
+        $mode_passation = $this->deduceModePassation($request->type, $montant_calcule);
+
+        $marche->update([
+            'date' => $request->date,
+            'intitule' => $request->intitule,
+            'compte_id' => $request->compte_id,
+            'budget_id' => $request->budget_id,
+            'nature' => $request->nature,
+            'type' => $request->type,
+            'montant' => $montant_calcule,
+            'mode_passation' => $mode_passation,
+            'fournisseur_id' => $request->fournisseur_id,
+        ]);
+
+        // Recreate articles
+        $marche->articles()->delete();
+        foreach ($request->articles as $art) {
+            $articleModel = \App\Models\Article::find($art['article_id']);
+            $designation = $articleModel ? $articleModel->designation : ($art['designation'] ?? 'Article inconnu');
+
+            $marche->articles()->create([
+                'designation' => $designation,
+                'conditionnement' => $art['conditionnement'] ?? null,
+                'quantite' => $art['quantite'],
+                'prix_unitaire' => $art['prix_unitaire'],
+                'prix_total' => $art['quantite'] * $art['prix_unitaire'],
+            ]);
+        }
+
+        return redirect()->route('marches.show', $marche)->with('success', 'Marché mis à jour avec succès.');
+    }
+
+    public function destroy(Marche $marche)
+    {
+        if ($marche->commandes()->exists()) {
+            return back()->with('error', 'Impossible de supprimer ce marché car il est associé à une ou plusieurs commandes.');
+        }
+
+        $marche->articles()->delete();
+        $marche->delete();
+
+        return redirect()->route('marches.index')->with('success', 'Marché supprimé avec succès.');
+    }
+
     private function deduceModePassation($type, $montant)
     {
         $montant = (float) $montant;

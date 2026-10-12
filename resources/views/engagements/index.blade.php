@@ -48,8 +48,14 @@
                             </span>
                         </td>
                         <td style="padding: 0.75rem; text-align: center;">
-                            <a href="{{ route('engagements.show', $engagement) }}" style="color: var(--primary); text-decoration: none;">Voir</a>
-                            | <a href="{{ route('engagements.document', $engagement) }}" target="_blank" style="color: var(--success); text-decoration: none;">📄</a>
+                            <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+                                <a href="{{ route('engagements.show', $engagement) }}" class="btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; text-decoration: none;">
+                                    👁 Voir
+                                </a>
+                                <a href="{{ route('engagements.document', $engagement) }}" target="_blank" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; text-decoration: none; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 0.4rem;" title="Imprimer le bon">
+                                    🖨️ Imprimer
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     @endforeach

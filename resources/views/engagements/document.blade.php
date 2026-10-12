@@ -90,7 +90,7 @@
             </div>
             <div style="text-align: right;">
                 <p>GESTION: {{ date('Y') }}</p>
-                <p>Dakar, le {{ $engagement->date->format('d/m/Y') }}</p>
+                <p>Dakar, le {{ $engagement->date ? \Carbon\Carbon::parse($engagement->date)->format('d/m/Y') : date('d/m/Y') }}</p>
             </div>
         </div>
 
@@ -103,19 +103,23 @@
                 <p><strong>Montant:</strong> {{ number_format($engagement->montant, 0, ',', ' ') }} FCFA</p>
             </div>
             <div class="box">
+                @php
+                    $compte = $engagement->compte ?? $engagement->commande?->compte;
+                    $service = $engagement->service ?? $engagement->commande?->service;
+                @endphp
                 <h4>IMPUTATION</h4>
                 <p><strong>Budget:</strong> {{ $engagement->nature ?? 'Fonctionnement' }}</p>
-                <p><strong>Numéro compte principal:</strong> {{ substr($engagement->commande->compte->numero ?? '', 0, 2) }}</p>
-                <p><strong>Libellé:</strong> {{ $engagement->commande->compte->libelle ?? '-' }}</p>
+                <p><strong>Numéro compte principal:</strong> {{ substr($compte->numero ?? '', 0, 2) }}</p>
+                <p><strong>Libellé:</strong> {{ $compte->libelle ?? '-' }}</p>
             </div>
         </div>
 
         <div class="grid-2" style="margin-bottom: 10px;">
             <div class="box">
                 <h4>DÉSIGNATION DU FOURNISSEUR</h4>
-                <p style="font-size: 11pt; font-weight: bold;">{{ $engagement->nom_fournisseur }}</p>
+                <p style="font-size: 11pt; font-weight: bold;">{{ $engagement->nom_fournisseur ?? 'Non spécifié' }}</p>
                 <p><strong>SONAFEL:</strong> {{ $engagement->sonafel ?? '-' }}</p>
-                <p><strong>SERVICE BÉNÉFICIAIRE:</strong> {{ $engagement->commande->service->nom ?? '-' }}</p>
+                <p><strong>SERVICE BÉNÉFICIAIRE:</strong> {{ $service->nom ?? '-' }}</p>
             </div>
             <div class="box">
                 <h4>SITUATION DES ENGAGEMENTS</h4>

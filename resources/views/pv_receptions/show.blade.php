@@ -87,13 +87,27 @@
         </div>
     </div>
 
-    <div>
+    <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+        @if(Auth::user()->can('pv_receptions.edit') || Auth::user()->role === 'admin')
+            <a href="{{ route('pv-receptions.edit', $pv_reception) }}" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; font-size: 0.85rem; font-weight: 600; text-decoration: none; background: #fef9c3; color: #92400e; border: 1px solid #fde68a; border-radius: 0.5rem;">
+                ✏️ Modifier
+            </a>
+        @endif
+        @if(Auth::user()->can('pv_receptions.delete') || Auth::user()->role === 'admin')
+            <form action="{{ route('pv-receptions.destroy', $pv_reception) }}" method="POST" onsubmit="return confirm('Supprimer cette réception ? Cette action est irréversible.');" style="display: inline;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.1rem; font-size: 0.85rem; font-weight: 600; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0.5rem; cursor: pointer;">
+                    🗑 Supprimer
+                </button>
+            </form>
+        @endif
         @if($isPrintable)
-            <button class="btn-primary" onclick="saveAndPrint()" style="display:flex; align-items:center; gap:0.5rem; padding:0.65rem 1.25rem; font-size:0.95rem;">
+            <button class="btn-primary" onclick="saveAndPrint()" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; font-size: 0.9rem; border-radius: 0.5rem; font-weight: 600;">
                 <span>🖨️</span> Imprimer le PV de Réception
             </button>
         @else
-            <span style="background:#f1f5f9; color:#64748b; padding:0.5rem 1rem; border-radius:99px; font-size:0.85rem; font-weight:600;">
+            <span style="background: #f1f5f9; color: #64748b; padding: 0.5rem 1rem; border-radius: 99px; font-size: 0.85rem; font-weight: 600;">
                 🚫 Impression non requise (≤ 300 000 FCFA)
             </span>
         @endif

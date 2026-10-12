@@ -3,34 +3,133 @@
 @section('title', 'Détail Engagement')
 
 @section('content')
-    <a href="{{ route('engagements.index') }}" style="display: inline-block; margin-bottom: 1.5rem; color: var(--text-muted); text-decoration: none;">
-        ← Retour à la liste
-    </a>
+    <style>
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            border: 1px solid transparent;
+            font-family: inherit;
+        }
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .btn-action-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-color: #fecaca;
+        }
+        .btn-action-danger:hover {
+            background: #fecaca;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        .btn-action-success {
+            background: var(--primary-600, #0d9488);
+            color: white;
+            border-color: transparent;
+        }
+        .btn-action-success:hover {
+            background: var(--primary-700, #0f766e);
+            color: white;
+        }
+        .btn-action-imprimer {
+            background: var(--primary-600, #0d9488);
+            color: white;
+            border-color: transparent;
+        }
+        .btn-action-imprimer:hover {
+            background: var(--primary-700, #0f766e);
+            color: white;
+        }
+        .btn-action-secondary {
+            background: white;
+            color: #334155;
+            border-color: var(--border-color, #e2e8f0);
+        }
+        .btn-action-secondary:hover {
+            background: var(--slate-50, #f8fafc);
+            color: #0f172a;
+        }
+    </style>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="margin: 0;">📄 Bon d'Engagement N° {{ $engagement->numero }}</h2>
+            <div style="margin-top: 0.3rem; display: flex; gap: 1rem; align-items: center; font-size: 0.9rem;">
+                <a href="{{ route('engagements.index') }}" style="color: var(--text-muted); text-decoration: none;">
+                    ← Retour à la liste
+                </a>
+                <span style="color: var(--border-color);">|</span>
+                <span style="color: var(--text-muted);">Date : <strong>{{ $engagement->date->format('d/m/Y') }}</strong></span>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+            @if($engagement->statut === 'cree')
+                @if(Auth::user()->can('engagements.rejeter') || Auth::user()->role === 'admin')
+                    <button type="button" onclick="refuserEngagement()" class="btn-action btn-action-danger">
+                        ❌ Rejeter
+                    </button>
+                @endif
+                @if(Auth::user()->can('engagements.valider') || Auth::user()->role === 'admin')
+                    <form action="{{ route('engagements.valider', $engagement) }}" method="POST" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn-action btn-action-success">
+                            ✅ Valider et créer le mandat
+                        </button>
+                    </form>
+                @endif
+            @endif
+
+            @if($engagement->statut === 'valide')
+                <a href="{{ route('engagements.document', $engagement) }}" target="_blank" class="btn-action btn-action-imprimer">
+                    🖨️ Imprimer le Bon
+                </a>
+                @if($engagement->mandat)
+                    <a href="{{ route('mandats.document', $engagement->mandat) }}" target="_blank" class="btn-action" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">
+                        🖨️ Imprimer Mandat
+                    </a>
+                    <a href="{{ route('mandats.show', $engagement->mandat) }}" class="btn-action btn-action-secondary">
+                        Voir le mandat →
+                    </a>
+                @endif
+            @endif
+        </div>
+    </div>
 
     @if ($errors->any())
         <div style="background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
             @foreach ($errors->all() as $error)
-                <p>{{ $error }}</p>
+                <p style="margin: 0 0 0.25rem 0;">⚠️ {{ $error }}</p>
             @endforeach
         </div>
     @endif
 
     <div class="card" style="margin-bottom: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <div>
-                <h2 style="margin-bottom: 0.5rem;">Engagement {{ $engagement->numero }}</h2>
-                <p style="color: var(--text-muted);">Date: {{ $engagement->date->format('d/m/Y') }}</p>
+                <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700;">Informations de l'Engagement</h3>
+                <span style="color: var(--text-muted); font-size: 0.85rem;">Détails budgétaires et imputation</span>
             </div>
             <div style="text-align: right;">
                 @php
                     $colors = [
-                        'cree' => 'background: var(--warning); color: white;',
-                        'valide' => 'background: var(--success); color: white;',
-                        'rejete' => 'background: var(--danger); color: white;',
+                        'cree' => 'background: #fef3c7; color: #92400e; border: 1px solid #fde68a;',
+                        'valide' => 'background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;',
+                        'rejete' => 'background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;',
                     ];
                 @endphp
-                <span style="font-size: 0.9rem; padding: 0.4rem 0.8rem; border-radius: 4px; {{ $colors[$engagement->statut] ?? '' }}">
-                    {{ ucfirst($engagement->statut) }}
+                <span style="font-size: 0.85rem; font-weight: 700; padding: 0.35rem 0.9rem; border-radius: 99px; {{ $colors[$engagement->statut] ?? '' }}">
+                    ● {{ ucfirst($engagement->statut) }}
                 </span>
             </div>
         </div>
@@ -40,11 +139,11 @@
                 <h4 style="margin-bottom: 1rem; color: var(--primary-700);">Informations</h4>
                 <p><strong>Objet:</strong> {{ $engagement->objet }}</p>
                 <p><strong>Nature:</strong> {{ $engagement->nature ?? '-' }}</p>
-                <p><strong>Fournisseur:</strong> {{ $engagement->nom_fournisseur }}</p>
+                <p><strong>Fournisseur:</strong> {{ $engagement->nom_fournisseur ?? 'Non spécifié' }}</p>
                 @if($engagement->commande && $engagement->commande->fichier)
                     <p><strong>Fichier du Marché:</strong> <a href="{{ asset('storage/' . $engagement->commande->fichier) }}" target="_blank" style="color: var(--primary); text-decoration: underline;">📎 Voir le fichier</a></p>
                 @endif
-                <p><strong>Montant:</strong> <span style="font-size: 1.2rem; font-weight: 700;">{{ number_format($engagement->montant, 0, ',', ' ') }} FCFA</span></p>
+                <p><strong>Montant:</strong> <span style="font-size: 1.2rem; font-weight: 700; color: var(--primary-700);">{{ number_format($engagement->montant, 0, ',', ' ') }} FCFA</span></p>
             </div>
             <div style="padding: 1rem; background: var(--slate-50); border-radius: 0.5rem;">
                 <h4 style="margin-bottom: 1rem; color: var(--primary-700);">Imputation</h4>
@@ -84,28 +183,41 @@
         </div>
         @endif
 
-        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center; flex-wrap: wrap; padding-top: 1rem; border-top: 1px solid var(--border-color);">
             @if($engagement->statut === 'cree')
-                <form action="{{ route('engagements.rejeter', $engagement) }}" method="POST" id="refusForm" style="display: none;">
-                    @csrf
-                    <input type="hidden" name="motif" id="motifRefusInput">
-                </form>
-                <button type="button" onclick="refuserEngagement()" class="btn-secondary" style="background: var(--danger); color: white; border: none;">Rejeter</button>
-                <form action="{{ route('engagements.valider', $engagement) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn-primary">Valider et créer le mandat</button>
-                </form>
+                @if(Auth::user()->can('engagements.rejeter') || Auth::user()->role === 'admin')
+                    <form action="{{ route('engagements.rejeter', $engagement) }}" method="POST" id="refusForm" style="display: none;">
+                        @csrf
+                        <input type="hidden" name="motif" id="motifRefusInput">
+                    </form>
+                    <button type="button" onclick="refuserEngagement()" class="btn-action btn-action-danger">
+                        ❌ Rejeter
+                    </button>
+                @endif
+                @if(Auth::user()->can('engagements.valider') || Auth::user()->role === 'admin')
+                    <form action="{{ route('engagements.valider', $engagement) }}" method="POST" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn-action btn-action-success">
+                            ✅ Valider et créer le mandat
+                        </button>
+                    </form>
+                @endif
             @endif
 
             @if($engagement->statut === 'valide')
-                <a href="{{ route('engagements.document', $engagement) }}" target="_blank" class="btn-primary">📄 Imprimer le Bon</a>
+                <a href="{{ route('engagements.document', $engagement) }}" target="_blank" class="btn-action btn-action-imprimer">
+                    🖨️ Imprimer le Bon
+                </a>
                 @if($engagement->mandat)
-                    <a href="{{ route('mandats.document', $engagement->mandat) }}" target="_blank" class="btn-primary" style="background: #e11d48; border-color: #e11d48;">📄 Imprimer Mandat</a>
-                    <a href="{{ route('mandats.show', $engagement->mandat) }}" class="btn-secondary">Voir le mandat →</a>
+                    <a href="{{ route('mandats.document', $engagement->mandat) }}" target="_blank" class="btn-action" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">
+                        🖨️ Imprimer Mandat
+                    </a>
+                    <a href="{{ route('mandats.show', $engagement->mandat) }}" class="btn-action btn-action-secondary">
+                        Voir le mandat →
+                    </a>
                 @endif
             @endif
         </div>
-    </div>
     </div>
 
     @if($engagement->statut === 'rejete' && $engagement->motif_rejet)

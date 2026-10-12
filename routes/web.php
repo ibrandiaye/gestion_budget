@@ -169,4 +169,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/mandats/{mandat}/refuser-comptable', [MandatController::class, 'refuserComptable'])->name('mandats.refuser-comptable');
     Route::post('/mandats/{mandat}/requisition', [MandatController::class, 'requisition'])->name('mandats.requisition');
     Route::get('/mandats/{mandat}/document', [MandatController::class, 'document'])->name('mandats.document');
+    Route::get('/mandats/{mandat}/edit', [MandatController::class, 'edit'])->name('mandats.edit');
+    Route::put('/mandats/{mandat}', [MandatController::class, 'update'])->name('mandats.update');
+    Route::delete('/mandats/{mandat}', [MandatController::class, 'destroy'])->name('mandats.destroy');
 });

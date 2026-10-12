@@ -3,14 +3,30 @@
 @section('title', 'Détails du Marché')
 
 @section('content')
-    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
-            <h2>Marché : {{ $marche->intitule }}</h2>
+            <h2 style="margin: 0 0 0.5rem 0;">Marché : {{ $marche->intitule }}</h2>
             <a href="{{ route('marches.index') }}" style="color: var(--text-muted); text-decoration: none;">&larr; Retour à la liste</a>
         </div>
-        <span style="background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 4px;">
-            Mode de Passation : <strong>{{ $marche->mode_passation }}</strong>
-        </span>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <span style="background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem;">
+                Mode de Passation : <strong>{{ $marche->mode_passation }}</strong>
+            </span>
+            @if(Auth::user()->can('marches.edit') || Auth::user()->role === 'admin')
+                <a href="{{ route('marches.edit', $marche) }}" class="btn-primary" style="padding: 0.5rem 1rem; text-decoration: none; background: #fef9c3; color: #92400e; border: 1px solid #fde68a;">
+                    ✏️ Modifier
+                </a>
+            @endif
+            @if(Auth::user()->can('marches.delete') || Auth::user()->role === 'admin')
+                <form action="{{ route('marches.destroy', $marche) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce marché ? Cette action est irréversible.');" style="display: inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" style="padding: 0.5rem 1rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0.5rem; font-weight: 500; cursor: pointer;">
+                        🗑 Supprimer
+                    </button>
+                </form>
+            @endif
+        </div>
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">

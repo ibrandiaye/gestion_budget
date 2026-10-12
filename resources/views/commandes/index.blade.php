@@ -48,22 +48,32 @@
                                 {{ ucfirst($commande->statut) }}
                             </span>
                         </td>
-                        <td style="padding: 0.75rem; text-align: center; display: flex; gap: 0.5rem; justify-content: center; align-items: center;">
-                            <a href="{{ route('commandes.show', $commande) }}" style="color: var(--primary); text-decoration: none;">Voir</a>
-                            | <a href="{{ route('commandes.document', $commande) }}" target="_blank" style="color: var(--success); text-decoration: none;">📄</a>
-                            
-                            @if(in_array($commande->statut, ['brouillon', 'rejete']))
-                                @if(Auth::user()->can('commandes.edit') || Auth::user()->role === 'admin')
-                                    | <a href="{{ route('commandes.edit', $commande) }}" style="color: var(--slate-700); text-decoration: none;" title="Modifier">✏️</a>
+                        <td style="padding: 0.75rem; text-align: center;">
+                            <div style="display: flex; gap: 0.35rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+                                <a href="{{ route('commandes.show', $commande) }}" class="btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; text-decoration: none;">
+                                    👁 Voir
+                                </a>
+                                <a href="{{ route('commandes.document', $commande) }}" target="_blank" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; text-decoration: none; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 0.4rem;" title="Imprimer le bon">
+                                    🖨️ Imprimer
+                                </a>
+                                
+                                @if(in_array($commande->statut, ['brouillon', 'rejete']))
+                                    @if(Auth::user()->can('commandes.edit') || Auth::user()->role === 'admin')
+                                        <a href="{{ route('commandes.edit', $commande) }}" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; text-decoration: none; background: #fef9c3; color: #92400e; border-radius: 0.4rem; border: 1px solid #fde68a;" title="Modifier">
+                                            ✏️ Modifier
+                                        </a>
+                                    @endif
+                                    @if(Auth::user()->can('commandes.delete') || Auth::user()->role === 'admin')
+                                        <form action="{{ route('commandes.destroy', $commande) }}" method="POST" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette commande ?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" style="padding: 0.3rem 0.65rem; font-size: 0.8rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0.4rem; cursor: pointer;" title="Supprimer">
+                                                🗑 Supprimer
+                                            </button>
+                                        </form>
+                                    @endif
                                 @endif
-                                @if(Auth::user()->can('commandes.delete') || Auth::user()->role === 'admin')
-                                    | <form action="{{ route('commandes.destroy', $commande) }}" method="POST" style="display: inline;" onsubmit="return confirm('Supprimer ?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" style="background: none; border: none; padding: 0; color: var(--danger); cursor: pointer;" title="Supprimer">🗑️</button>
-                                    </form>
-                                @endif
-                            @endif
+                            </div>
                         </td>
                     </tr>
                     @endforeach

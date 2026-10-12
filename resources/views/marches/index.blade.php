@@ -36,7 +36,25 @@
                         <td style="padding: 0.75rem;">{{ $marche->mode_passation }}</td>
                         <td style="padding: 0.75rem; text-align: right; font-weight: 600;">{{ number_format($marche->montant, 0, ',', ' ') }} FCFA</td>
                         <td style="padding: 0.75rem; text-align: center;">
-                            <a href="{{ route('marches.show', $marche) }}" style="color: var(--primary); text-decoration: none;">Voir</a>
+                            <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
+                                <a href="{{ route('marches.show', $marche) }}" class="btn-primary" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; text-decoration: none;">
+                                    👁 Voir
+                                </a>
+                                @if(Auth::user()->can('marches.edit') || Auth::user()->role === 'admin')
+                                    <a href="{{ route('marches.edit', $marche) }}" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; text-decoration: none; background: #fef9c3; color: #92400e; border-radius: 0.4rem; border: 1px solid #fde68a;">
+                                        ✏️ Modifier
+                                    </a>
+                                @endif
+                                @if(Auth::user()->can('marches.delete') || Auth::user()->role === 'admin')
+                                    <form action="{{ route('marches.destroy', $marche) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce marché ? Cette action est irréversible.');" style="display: inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" style="padding: 0.3rem 0.75rem; font-size: 0.8rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0.4rem; cursor: pointer;">
+                                            🗑 Supprimer
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @endforeach

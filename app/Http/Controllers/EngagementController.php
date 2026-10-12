@@ -52,7 +52,7 @@ class EngagementController extends Controller
             'date' => 'required|date',
             'objet' => 'required|string|max:191',
             'montant' => 'required|numeric|min:1',
-            'nom_fournisseur' => 'required|string|max:191',
+            'nom_fournisseur' => 'nullable|string|max:191',
         ]);
 
         $budget = Budget::whereIn('statut', ['brouillon', 'actif'])->latest('annee')->first();
@@ -94,7 +94,7 @@ class EngagementController extends Controller
             'budget_id' => $budget->id,
             'date' => $request->date,
             'objet' => $request->objet,
-            'nature' => 'Engagement direct (≤ 300 000)',
+            'nature' => 'Engagement direct',
             'montant' => $request->montant,
             'nom_fournisseur' => $request->nom_fournisseur,
             'statut' => 'cree',

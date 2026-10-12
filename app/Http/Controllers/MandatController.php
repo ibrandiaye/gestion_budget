@@ -31,6 +31,100 @@ class MandatController extends Controller
         return view('mandats.show', compact('mandat'));
     }
 
+    public function edit(Mandat $mandat)
+    {
+        $mandat->load(['engagement.commande.compte', 'engagement.commande.service']);
+        return view('mandats.edit', compact('mandat'));
+    }
+
+    public function update(Request $request, Mandat $mandat)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'objet_depense' => 'required|string|max:255',
+            'beneficiaire' => 'required|string|max:255',
+            'montant' => 'required|numeric|min:0',
+            'montant_lettres' => 'nullable|string|max:255',
+            'pieces_justificatives' => 'nullable|string|max:500',
+            'mode_reglement' => 'nullable|string|max:100',
+            'etablissement' => 'nullable|string|max:191',
+            'numero_compte' => 'nullable|string|max:100',
+            'rib' => 'nullable|string|max:100',
+            'compte_principal' => 'nullable|string|max:50',
+            'compte_imputation' => 'nullable|string|max:50',
+            'libelle_imputation' => 'nullable|string|max:255',
+        ]);
+
+        $ancienMontant = (float) $mandat->montant;
+        $nouveauMontant = (float) $request->montant;
+
+        $mandat->update([
+            'date' => $request->date,
+            'objet_depense' => $request->objet_depense,
+            'beneficiaire' => $request->beneficiaire,
+            'montant' => $nouveauMontant,
+            'montant_lettres' => $request->montant_lettres,
+            'pieces_justificatives' => $request->pieces_justificatives,
+            'mode_reglement' => $request->mode_reglement,
+            'etablissement' => $request->etablissement,
+            'numero_compte' => $request->numero_compte,
+            'rib' => $request->rib,
+            'compte_principal' => $request->compte_principal,
+            'compte_imputation' => $request->compte_imputation,
+            'libelle_imputation' => $request->libelle_imputation,
+        ]);
+
+        // Ajuster le budget si déjà payé et montant modifié
+        if ($mandat->isPaye() && $ancienMontant != $nouveauMontant) {
+            $difference = $nouveauMontant - $ancienMontant;
+            $engagement = $mandat->engagement;
+            $commande = $engagement?->commande;
+            $budgetId = $commande?->budget_id ?? $engagement?->budget_id;
+            $compteId = $commande?->compte_id ?? $engagement?->compte_id;
+            $serviceId = $commande?->service_id ?? $engagement?->service_id;
+
+            if ($budgetId && $compteId) {
+                $ligneBudget = LigneBudget::where('budget_id', $budgetId)
+                    ->where('compte_id', $compteId)
+                    ->when($serviceId, fn($q) => $q->where('service_id', $serviceId))
+                    ->first();
+                if ($ligneBudget) {
+                    $ligneBudget->increment('montant_engage', $difference);
+                    $ligneBudget->increment('montant_paye', $difference);
+                }
+            }
+        }
+
+        return redirect()->route('mandats.show', $mandat)->with('success', 'Mandat modifié avec succès.');
+    }
+
+    public function destroy(Mandat $mandat)
+    {
+        // Si le mandat était payé, régulariser le budget
+        if ($mandat->isPaye()) {
+            $engagement = $mandat->engagement;
+            $commande = $engagement?->commande;
+            $budgetId = $commande?->budget_id ?? $engagement?->budget_id;
+            $compteId = $commande?->compte_id ?? $engagement?->compte_id;
+            $serviceId = $commande?->service_id ?? $engagement?->service_id;
+
+            if ($budgetId && $compteId) {
+                $ligneBudget = LigneBudget::where('budget_id', $budgetId)
+                    ->where('compte_id', $compteId)
+                    ->when($serviceId, fn($q) => $q->where('service_id', $serviceId))
+                    ->first();
+                if ($ligneBudget) {
+                    $ligneBudget->decrement('montant_engage', $mandat->montant);
+                    $ligneBudget->decrement('montant_paye', $mandat->montant);
+                }
+            }
+        }
+
+        $mandat->delete();
+
+        return redirect()->route('mandats.index')->with('success', 'Mandat supprimé avec succès.');
+    }
+
     public function validerDirecteur(Mandat $mandat)
     {
         if (!$mandat->canBeValidatedByDirecteur()) {
@@ -148,7 +242,12 @@ class MandatController extends Controller
 
     public function document(Mandat $mandat)
     {
-        $mandat->load(['engagement.commande.compte', 'engagement.commande.service']);
+        $mandat->load([
+            'engagement.commande.compte', 
+            'engagement.commande.service',
+            'engagement.compte',
+            'engagement.service'
+        ]);
         return view('mandats.document', compact('mandat'));
     }
 
@@ -158,17 +257,23 @@ class MandatController extends Controller
     private function defalquerBudget(Mandat $mandat)
     {
         $engagement = $mandat->engagement;
-        $commande = $engagement->commande;
+        $commande = $engagement?->commande;
 
-        $ligneBudget = LigneBudget::where('budget_id', $commande->budget_id)
-            ->where('compte_id', $commande->compte_id)
-            ->where('service_id', $commande->service_id)
-            ->first();
+        $budgetId = $commande?->budget_id ?? $engagement?->budget_id;
+        $compteId = $commande?->compte_id ?? $engagement?->compte_id;
+        $serviceId = $commande?->service_id ?? $engagement?->service_id;
 
-        if ($ligneBudget) {
-            // Increase montant_engage (committed) and montant_paye (paid)
-            $ligneBudget->increment('montant_engage', $mandat->montant);
-            $ligneBudget->increment('montant_paye', $mandat->montant);
+        if ($budgetId && $compteId) {
+            $ligneBudget = LigneBudget::where('budget_id', $budgetId)
+                ->where('compte_id', $compteId)
+                ->when($serviceId, fn($q) => $q->where('service_id', $serviceId))
+                ->first();
+
+            if ($ligneBudget) {
+                // Increase montant_engage (committed) and montant_paye (paid)
+                $ligneBudget->increment('montant_engage', $mandat->montant);
+                $ligneBudget->increment('montant_paye', $mandat->montant);
+            }
         }
     }
 }
