@@ -277,8 +277,7 @@
             fournisseurSelect.setAttribute('required', 'required');
 
             try {
-                let updateUrl = "{{ route('api.fournisseurs.compte', ':id') }}";
-                const response = await fetch(updateUrl.replace(':id', selectedCompteId));
+                const response = await fetch(`/api/fournisseurs/compte/${selectedCompteId}`);
                 const fournisseurs = await response.json();
                 
                 let options = '<option value="">Choisir un fournisseur...</option>';

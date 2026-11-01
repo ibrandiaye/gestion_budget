@@ -99,15 +99,15 @@
                 🖨️ Imprimer
             </button>
 
-            <a href="{{ route('reporting.mshp') }}" class="btn-action-rep" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">
+            <a href="{{ route('reporting.mshp', ['budget_id' => $budget?->id]) }}" class="btn-action-rep" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">
                 📊 Rapport MSHP
             </a>
 
-            <a href="{{ route('reporting.mfb') }}" class="btn-action-rep" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">
+            <a href="{{ route('reporting.mfb', ['budget_id' => $budget?->id]) }}" class="btn-action-rep" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">
                 📊 Rapport MFB
             </a>
 
-            <a href="{{ route('reporting.global') }}" class="btn-action-rep" style="background: white; color: var(--text-color); border-color: var(--border-color);">
+            <a href="{{ route('reporting.global', ['budget_id' => $budget?->id]) }}" class="btn-action-rep" style="background: white; color: var(--text-color); border-color: var(--border-color);">
                 Vue Globale
             </a>
         </div>

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ajustement;
 use App\Models\Budget;
-use App\Models\LigneBudget;
+use App\Models\Commande;
 use App\Models\Compte;
-use App\Models\Service;
+use App\Models\DotationCompte;
+use App\Models\Engagement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,7 +15,7 @@ class BudgetYearController extends Controller
 {
     public function index()
     {
-        $budgets = Budget::withCount('lignes')->orderByDesc('annee')->get();
+        $budgets = Budget::withCount('dotationsComptes')->orderByDesc('annee')->get();
         return view('budgets.index', compact('budgets'));
     }
 
@@ -44,48 +46,92 @@ class BudgetYearController extends Controller
 
     public function show(Budget $budget)
     {
-        $budget->load(['lignes.compte', 'lignes.service']);
-        $totalAlloue = $budget->lignes->sum('montant_alloue');
-        $totalEngage = $budget->lignes->sum('montant_engage');
-        
-        return view('budgets.show', compact('budget', 'totalAlloue', 'totalEngage'));
+        $comptes = Compte::with([
+            'compteParent',
+            'dotations' => fn($q) => $q->where('budget_id', $budget->id),
+        ])
+            ->whereNotNull('compte_parent_id')
+            ->where('etat', 'actif')
+            ->orderBy('numero')
+            ->get();
+
+        $comptesBudget = $comptes->map(function ($compte) use ($budget) {
+            $dotationInitiale = (float) $compte->getDotationForBudget($budget->id);
+
+            $virementPlus = (float) Ajustement::where('budget_id', $budget->id)
+                ->where('compte_dest_id', $compte->id)
+                ->sum('montant');
+            $virementMoins = (float) Ajustement::where('budget_id', $budget->id)
+                ->where('compte_source_id', $compte->id)
+                ->sum('montant');
+            $virement = $virementPlus - $virementMoins;
+
+            $dotationTotale = $dotationInitiale + $virement;
+
+            $totalCommandes = (float) Commande::where('compte_id', $compte->id)
+                ->where('budget_id', $budget->id)
+                ->where('statut', '!=', 'rejete')
+                ->get()
+                ->sum(function ($cmd) {
+                    if ($cmd->statut === 'valide') {
+                        return $cmd->articles()->where('valide', true)->sum('montant_ht');
+                    }
+                    return $cmd->articles()->sum('montant_ht');
+                });
+
+            $totalEngage = (float) Engagement::where('compte_id', $compte->id)
+                ->where('budget_id', $budget->id)
+                ->where('statut', '!=', 'rejete')
+                ->sum('montant');
+
+            return (object) [
+                'compte' => $compte,
+                'dotation_initiale' => $dotationInitiale,
+                'virement' => $virement,
+                'dotation_totale' => $dotationTotale,
+                'total_commandes' => $totalCommandes,
+                'total_engage' => $totalEngage,
+                'disponible' => $dotationTotale - $totalEngage,
+            ];
+        });
+
+        $totalAlloue = $comptesBudget->sum('dotation_totale');
+        $totalCommandes = $comptesBudget->sum('total_commandes');
+        $totalEngage = $comptesBudget->sum('total_engage');
+
+        return view('budgets.show', compact('budget', 'comptesBudget', 'totalAlloue', 'totalCommandes', 'totalEngage'));
     }
 
     /**
-     * Download Excel template for budget import
+     * Download Excel template for budget import (par compte)
      */
     public function downloadTemplate()
     {
         $comptes = Compte::whereNotNull('compte_parent_id')->where('etat', 'actif')->orderBy('numero')->get();
-        $services = Service::orderBy('nom')->get();
 
-        // Generate CSV template
-        $filename = 'modele_budget_' . date('Y') . '.csv';
+        $filename = 'modele_dotations_comptes_' . date('Y') . '.csv';
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function() use ($comptes, $services) {
+        $callback = function () use ($comptes) {
             $file = fopen('php://output', 'w');
             // BOM for Excel UTF-8
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
             // Header row
-            fputcsv($file, ['numero_compte', 'libelle_compte', 'service', 'montant_alloue'], ';');
-            
-            // Example rows with all comptes x services
+            fputcsv($file, ['numero_compte', 'libelle_compte', 'dotation_initiale', 'prix_unitaire_ref'], ';');
+
             foreach ($comptes as $compte) {
-                foreach ($services as $service) {
-                    fputcsv($file, [
-                        $compte->numero,
-                        $compte->libelle,
-                        $service->nom,
-                        0,
-                    ], ';');
-                }
+                fputcsv($file, [
+                    $compte->numero,
+                    $compte->libelle,
+                    (float) ($compte->dotation ?? 0),
+                    (float) ($compte->prix_unitaire_ref ?? 0),
+                ], ';');
             }
-            
+
             fclose($file);
         };
 
@@ -93,7 +139,7 @@ class BudgetYearController extends Controller
     }
 
     /**
-     * Import budget from Excel/CSV file
+     * Import budget allocations per account from Excel/CSV file
      */
     public function import(Request $request)
     {
@@ -112,14 +158,11 @@ class BudgetYearController extends Controller
 
         DB::beginTransaction();
         try {
-            // Delete existing lines for this budget if reimporting
-            LigneBudget::where('budget_id', $budget->id)->delete();
-
             $handle = fopen($path, 'r');
-            
+
             // Skip BOM if present
             $bom = fread($handle, 3);
-            if ($bom !== chr(0xEF).chr(0xBB).chr(0xBF)) {
+            if ($bom !== chr(0xEF) . chr(0xBB) . chr(0xBF)) {
                 rewind($handle);
             }
 
@@ -130,56 +173,54 @@ class BudgetYearController extends Controller
             }
 
             // Normalize header
-            $header = array_map(function($h) {
+            $header = array_map(function ($h) {
                 return strtolower(trim(str_replace(' ', '_', $h)));
             }, $header);
 
             $colNumero = array_search('numero_compte', $header);
-            $colService = array_search('service', $header);
-            $colMontant = array_search('montant_alloue', $header);
+            $colMontant = array_search('dotation_initiale', $header);
+            if ($colMontant === false) {
+                $colMontant = array_search('montant_alloue', $header);
+            }
+            $colPrixRef = array_search('prix_unitaire_ref', $header);
 
             if ($colNumero === false || $colMontant === false) {
-                throw new \Exception('Colonnes requises manquantes: numero_compte, montant_alloue');
+                throw new \Exception('Colonnes requises manquantes: numero_compte, dotation_initiale (ou montant_alloue)');
             }
 
             while (($row = fgetcsv($handle, 0, ';')) !== false) {
                 $lineNumber++;
-                
-                if (count($row) < max($colNumero, $colMontant) + 1) continue;
+
+                if (count($row) < max($colNumero, $colMontant) + 1) {
+                    continue;
+                }
 
                 $numeroCompte = trim($row[$colNumero]);
-                $serviceName = $colService !== false ? trim($row[$colService]) : null;
                 $montant = floatval(str_replace([' ', ','], ['', '.'], $row[$colMontant]));
+                $prixRef = ($colPrixRef !== false && isset($row[$colPrixRef]))
+                    ? floatval(str_replace([' ', ','], ['', '.'], $row[$colPrixRef]))
+                    : null;
 
-                if (empty($numeroCompte) || $montant <= 0) continue;
+                if (empty($numeroCompte)) {
+                    continue;
+                }
 
-                // Find compte
                 $compte = Compte::where('numero', $numeroCompte)->first();
                 if (!$compte) {
                     $errors[] = "Ligne {$lineNumber}: Compte \"{$numeroCompte}\" introuvable.";
                     continue;
                 }
 
-                // Find service (optional)
-                $serviceId = null;
-                if ($serviceName) {
-                    $service = Service::where('nom', 'LIKE', "%{$serviceName}%")->first();
-                    if ($service) {
-                        $serviceId = $service->id;
-                    } else {
-                        $errors[] = "Ligne {$lineNumber}: Service \"{$serviceName}\" introuvable.";
-                        continue;
-                    }
-                }
-
-                LigneBudget::create([
-                    'budget_id' => $budget->id,
-                    'compte_id' => $compte->id,
-                    'service_id' => $serviceId,
-                    'montant_alloue' => $montant,
-                    'montant_engage' => 0,
-                    'montant_paye' => 0,
-                ]);
+                DotationCompte::updateOrCreate(
+                    [
+                        'budget_id' => $budget->id,
+                        'compte_id' => $compte->id,
+                    ],
+                    [
+                        'dotation_initiale' => $montant,
+                        'prix_unitaire_ref' => $prixRef ?? $compte->prix_unitaire_ref ?? 0,
+                    ]
+                );
 
                 $imported++;
             }
@@ -195,7 +236,7 @@ class BudgetYearController extends Controller
 
             DB::commit();
 
-            $message = "{$imported} ligne(s) budgétaire(s) importée(s) avec succès.";
+            $message = "{$imported} allocation(s) de compte importée(s) avec succès pour l'exercice {$budget->annee}.";
             return back()->with('success', $message);
 
         } catch (\Exception $e) {

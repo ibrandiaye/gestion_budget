@@ -330,7 +330,7 @@
             const currentSelected = fSelect.value;
             
             try {
-                let url = "{{ route('api.fournisseurs.compte', ':id') }}".replace(':id', compteId);
+                let url = `/api/fournisseurs/compte/${compteId}`;
                 const response = await fetch(url);
                 if (response.ok) {
                     const fournisseurs = await response.json();

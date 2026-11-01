@@ -414,8 +414,8 @@ class CommandeController extends Controller
             ->where('service_id', $commande->service_id)
             ->first();
         
-        $dotation = $ligneBudget->montant_alloue ?? 0;
-        $creditsEngages = $ligneBudget->montant_engage ?? 0;
+        $dotation = $commande->compte ? (float) $commande->compte->getDotationForBudget($commande->budget_id) + (float) \App\Models\Ajustement::where('budget_id', $commande->budget_id)->where('compte_dest_id', $commande->compte_id)->sum('montant') - (float) \App\Models\Ajustement::where('budget_id', $commande->budget_id)->where('compte_source_id', $commande->compte_id)->sum('montant') : 0;
+        $creditsEngages = (float) Engagement::where('budget_id', $commande->budget_id)->where('compte_id', $commande->compte_id)->where('statut', '!=', 'rejete')->sum('montant');
         $disponible = $dotation - $creditsEngages;
         
         // Montant total et articles

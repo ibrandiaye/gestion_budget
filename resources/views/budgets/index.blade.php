@@ -36,7 +36,7 @@
                         <th style="padding: 0.75rem;">Année</th>
                         <th style="padding: 0.75rem;">Statut</th>
                         <th style="padding: 0.75rem;">Période</th>
-                        <th style="padding: 0.75rem;">Lignes</th>
+                        <th style="padding: 0.75rem; text-align: center;">Comptes dotés</th>
                         <th style="padding: 0.75rem;">Actions</th>
                     </tr>
                 </thead>
@@ -61,7 +61,7 @@
                             </td>
                             <td style="padding: 0.75rem; text-align: center;">
                                 <span style="background: var(--slate-100); padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.85rem; font-weight: 600;">
-                                    {{ $budget->lignes_count ?? 0 }}
+                                    {{ $budget->dotations_comptes_count ?? 0 }}
                                 </span>
                             </td>
                             <td style="padding: 0.75rem;">
@@ -108,9 +108,9 @@
 
             <!-- Import Budget from Excel -->
             <div class="card">
-                <h3 style="margin-bottom: 1rem;">📥 Importer le Budget (Excel/CSV)</h3>
+                <h3 style="margin-bottom: 1rem;">📥 Importer les Allocations (Excel/CSV)</h3>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
-                    Chargez un fichier CSV contenant les dotations budgétaires par compte et service.
+                    Chargez un fichier CSV contenant les dotations budgétaires annuelles par compte.
                 </p>
 
                 <a href="{{ route('budgets.template') }}" class="btn-secondary" style="display: inline-block; margin-bottom: 1.5rem; text-decoration: none; padding: 0.5rem 1rem; font-size: 0.85rem;">
@@ -134,7 +134,7 @@
                         <input type="file" name="fichier" required accept=".csv,.xls,.xlsx"
                             style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.5rem; background: white; box-sizing: border-box;">
                     </div>
-                    <button type="submit" class="btn-primary" style="width: 100%;" onclick="return confirm('Attention: cette action remplacera toutes les lignes budgétaires existantes pour l\'exercice sélectionné. Continuer ?');">📥 Importer le budget</button>
+                    <button type="submit" class="btn-primary" style="width: 100%;" onclick="return confirm('Attention: cette action mettra à jour les dotations des comptes pour l\'exercice sélectionné. Continuer ?');">📥 Importer les dotations</button>
                 </form>
             </div>
         </div>

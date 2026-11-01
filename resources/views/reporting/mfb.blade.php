@@ -4,25 +4,46 @@
 
 @section('content')
     <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <h3 style="margin-bottom: 0.5rem; font-size: 1.1rem; font-weight: 600;">Rapport MFB - Exécution Budgétaire (Agrégé)</h3>
-                <p style="color: var(--text-muted);">Rapport agrégé par comptes à 4 chiffres</p>
+                <h3 style="margin-bottom: 0.35rem; font-size: 1.2rem; font-weight: 700;">
+                    Rapport MFB — Exécution Budgétaire Agrégée @if(isset($budget) && $budget) ({{ $budget->annee }}) @endif
+                </h3>
+                <p style="color: var(--text-muted); margin: 0;">Rapport agrégé par comptes à 4 chiffres (allocations annuelles par compte)</p>
             </div>
-            <div style="display: flex; gap: 0.75rem;">
-                <a href="{{ route('export.mfb') }}" class="btn-primary" style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                @if(isset($budgets) && $budgets->count() > 1)
+                    <form action="{{ route('reporting.mfb') }}" method="GET" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Exercice :</label>
+                        <select name="budget_id" onchange="this.form.submit()" style="padding: 0.45rem 0.65rem; border-radius: 0.4rem; border: 1px solid var(--border-color); font-size: 0.85rem; font-weight: 600; cursor: pointer; background: white;">
+                            @foreach($budgets as $b)
+                                <option value="{{ $b->id }}" {{ (isset($budget) && $budget && $budget->id == $b->id) ? 'selected' : '' }}>
+                                    {{ $b->annee }} ({{ ucfirst($b->statut) }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </form>
+                @endif
+                <a href="{{ route('export.mfb', ['budget_id' => $budget?->id]) }}" class="btn-primary" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none;">
                     <i class="fa fa-download"></i> Exporter CSV
                 </a>
-                <a href="{{ route('reporting.global') }}" class="btn-secondary">Retour</a>
+                <a href="{{ route('reporting.global', ['budget_id' => $budget?->id]) }}" class="btn-secondary" style="text-decoration: none;">Retour</a>
             </div>
         </div>
+
+        @php
+            $grandAlloue = 0;
+            $grandEngage = 0;
+        @endphp
 
         @foreach($data as $parentData)
             @php
                 $parent = $parentData['parent'];
                 $taux_total = $parentData['total_alloue'] > 0 ? ($parentData['total_engage'] / $parentData['total_alloue']) * 100 : 0;
+                $grandAlloue += $parentData['total_alloue'];
+                $grandEngage += $parentData['total_engage'];
             @endphp
-            
+
             <div style="margin-bottom: 2.5rem;">
                 <!-- Parent Header -->
                 <div style="background: var(--primary-50); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
@@ -35,18 +56,18 @@
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-color); text-align: left; font-size: 0.85rem; color: var(--text-muted);">
-                            <th style="padding: 0.75rem;">Numéro</th>
+                            <th style="padding: 0.75rem;">Numéro (4 chiffres)</th>
                             <th style="padding: 0.75rem;">Libellé</th>
-                            <th style="padding: 0.75rem; text-align: right;">Montant Affecté</th>
-                            <th style="padding: 0.75rem; text-align: right;">Total Exécuté</th>
+                            <th style="padding: 0.75rem; text-align: right;">Dotation Annuelle</th>
+                            <th style="padding: 0.75rem; text-align: right;">Total Engagé</th>
                             <th style="padding: 0.75rem; text-align: right;">Taux (%)</th>
-                            <th style="padding: 0.75rem; text-align: right;">Restant</th>
+                            <th style="padding: 0.75rem; text-align: right;">Solde Disponible</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($parentData['comptes'] as $compte)
                             <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 0.75rem; font-family: monospace; font-weight: 500;">{{ $compte['numero'] }}</td>
+                                <td style="padding: 0.75rem; font-family: monospace; font-weight: 600;">{{ $compte['numero'] }}</td>
                                 <td style="padding: 0.75rem;">{{ $compte['libelle'] }}</td>
                                 <td style="padding: 0.75rem; text-align: right; font-family: monospace;">
                                     {{ number_format($compte['alloue'], 0, ',', ' ') }}
@@ -59,12 +80,12 @@
                                         {{ round($compte['taux'], 2) }}%
                                     </span>
                                 </td>
-                                <td style="padding: 0.75rem; text-align: right; font-family: monospace; color: var(--success-dark);">
+                                <td style="padding: 0.75rem; text-align: right; font-family: monospace; font-weight: 600; color: {{ $compte['restant'] < 0 ? 'var(--danger)' : 'var(--success-dark)' }};">
                                     {{ number_format($compte['restant'], 0, ',', ' ') }}
                                 </td>
                             </tr>
                         @endforeach
-                        
+
                         <!-- Total Row -->
                         <tr style="background: var(--warning-light); font-weight: 700;">
                             <td colspan="2" style="padding: 1rem;">TOTAL {{ $parent->libelle }}</td>
@@ -87,5 +108,19 @@
                 </table>
             </div>
         @endforeach
+
+        @if(count($data) > 0)
+            @php
+                $grandTaux = $grandAlloue > 0 ? ($grandEngage / $grandAlloue) * 100 : 0;
+            @endphp
+            <div style="background: var(--slate-800); color: white; padding: 1.25rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div style="font-weight: 700; font-size: 1rem;">TOTAL GÉNÉRAL EXERCICE {{ $budget->annee ?? '' }}</div>
+                <div style="display: flex; gap: 2rem; flex-wrap: wrap; font-family: monospace; font-size: 0.95rem;">
+                    <div>Dotation : <strong>{{ number_format($grandAlloue, 0, ',', ' ') }} FCFA</strong></div>
+                    <div>Engagé : <strong>{{ number_format($grandEngage, 0, ',', ' ') }} FCFA</strong> ({{ round($grandTaux, 2) }}%)</div>
+                    <div>Disponible : <strong>{{ number_format($grandAlloue - $grandEngage, 0, ',', ' ') }} FCFA</strong></div>
+                </div>
+            </div>
+        @endif
     </div>
 @endsection
