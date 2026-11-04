@@ -52,18 +52,45 @@ class UserController extends Controller
             'service_id' => 'nullable|required_if:role,service|exists:services,id',
             'matricule' => 'nullable|string|max:50|unique:users,matricule,' . $user->id,
             'fonction' => 'nullable|string|max:255',
+            'password' => 'nullable|string|min:8|confirmed',
+        ], [
+            'password.min' => 'Le mot de passe doit comporter au moins 8 caractères.',
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
         ]);
 
-        $user->update([
+        $data = [
             'name' => $request->name,
             'email' => $request->email,
             'role' => $request->role,
             'service_id' => $request->service_id,
             'matricule' => $request->matricule,
             'fonction' => $request->fonction,
-        ]);
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
 
         return back()->with('success', 'Utilisateur modifié avec succès.');
+    }
+
+    public function updatePassword(Request $request, User $user)
+    {
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.required' => 'Le nouveau mot de passe est obligatoire.',
+            'password.min' => 'Le mot de passe doit comporter au moins 8 caractères.',
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+        ]);
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return back()->with('success', "Le mot de passe de {$user->name} a été mis à jour avec succès.");
     }
 
     public function destroy(User $user)

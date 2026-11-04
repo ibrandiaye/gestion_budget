@@ -40,9 +40,14 @@
                             <td style="padding: 0.75rem; color: var(--text-muted);">
                                 {{ $user->service->nom ?? '-' }}
                             </td>
-                            <td style="padding: 0.75rem;">
-                                <button onclick="openUserModal({{ $user }})" 
-                                    style="color: var(--primary); background: none; border: none; cursor: pointer; margin-right: 0.5rem;">✏️</button>
+                            <td style="padding: 0.75rem; white-space: nowrap;">
+                                <button type="button" onclick="openUserModal({{ json_encode($user) }})" 
+                                    title="Modifier l'utilisateur"
+                                    style="color: var(--primary); background: none; border: none; cursor: pointer; margin-right: 0.5rem; font-size: 1.05rem;">✏️</button>
+
+                                <button type="button" onclick="openPasswordModal({{ json_encode($user) }})" 
+                                    title="Changer le mot de passe"
+                                    style="color: #d97706; background: none; border: none; cursor: pointer; margin-right: 0.5rem; font-size: 1.05rem;">🔑</button>
                                 
                                 @if($user->id !== Auth::id())
                                     <form action="{{ route('users.destroy', $user) }}" method="POST"
@@ -51,7 +56,8 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
-                                            style="color: var(--danger); background: none; border: none; cursor: pointer;">🗑️</button>
+                                            title="Supprimer l'utilisateur"
+                                            style="color: var(--danger); background: none; border: none; cursor: pointer; font-size: 1.05rem;">🗑️</button>
                                     </form>
                                 @endif
                             </td>
@@ -81,7 +87,7 @@
 
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Mot de passe</label>
-                    <input type="password" name="password" required
+                    <input type="password" name="password" required minlength="8"
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                 </div>
 
@@ -122,17 +128,17 @@
             </form>
         </div>
     </div>
-    </div>
 
-    <!-- Edit Modal -->
+    <!-- Edit User Modal -->
     <div id="userModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div class="card" style="width: 100%; max-width: 500px; margin: 2rem;">
-            <h3 style="margin-bottom: 1.5rem;">Modifier Utilisateur</h3>
+        <div class="card" style="width: 100%; max-width: 520px; margin: 2rem; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 style="margin: 0;">Modifier Utilisateur</h3>
+                <button type="button" onclick="closeUserModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); line-height: 1;">&times;</button>
+            </div>
             <form id="editUserForm" method="POST">
                 @csrf
                 @method('PUT') 
-                <!-- Note: Users Controller needs update method, using POST for now if PUT not defined, 
-                     but standard resource uses PUT/PATCH. Laravel accepts PUT via method spoofing. -->
                 
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Nom Complet</label>
@@ -168,7 +174,7 @@
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                 </div>
 
-                <div style="margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 1.25rem;">
                     <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Service</label>
                     <select id="edit_service_id" name="service_id"
                         style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
@@ -179,9 +185,66 @@
                     </select>
                 </div>
 
+                <!-- Password update section in edit modal -->
+                <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1rem; margin-bottom: 1.5rem;">
+                    <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--text-color, #334155); display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🔒</span> Modifier le mot de passe <small style="font-weight: normal; color: var(--text-muted);">(optionnel)</small>
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem;">Nouveau mot de passe</label>
+                        <input type="password" id="edit_password" name="password" minlength="8" placeholder="Laisser vide pour ne pas modifier (min. 8 car.)" autocomplete="new-password"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem;">Confirmer le mot de passe</label>
+                        <input type="password" id="edit_password_confirmation" name="password_confirmation" placeholder="Confirmer le nouveau mot de passe" autocomplete="new-password"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 1rem;">
                     <button type="button" onclick="closeUserModal()" class="btn-secondary" style="flex: 1; text-align: center;">Annuler</button>
                     <button type="submit" class="btn-primary" style="flex: 1;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dedicated Change Password Modal -->
+    <div id="passwordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 100%; max-width: 480px; margin: 2rem; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🔑</span> Changer le mot de passe
+                </h3>
+                <button type="button" onclick="closePasswordModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); line-height: 1;">&times;</button>
+            </div>
+
+            <p style="margin-bottom: 1.25rem; font-size: 0.9rem; color: var(--text-muted); background: var(--slate-50, #f8fafc); padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+                Utilisateur : <strong id="password_user_name" style="color: var(--text-color, #1e293b);"></strong>
+            </p>
+
+            <form id="changePasswordForm" method="POST">
+                @csrf
+                @method('PUT')
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Nouveau mot de passe</label>
+                    <input type="password" name="password" required minlength="8" placeholder="Au moins 8 caractères" autocomplete="new-password"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Confirmer le mot de passe</label>
+                    <input type="password" name="password_confirmation" required minlength="8" placeholder="Retapez le nouveau mot de passe" autocomplete="new-password"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" onclick="closePasswordModal()" class="btn-secondary" style="flex: 1; text-align: center;">Annuler</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;">Mettre à jour</button>
                 </div>
             </form>
         </div>
@@ -200,12 +263,12 @@
             document.getElementById('edit_matricule').value = user.matricule || '';
             document.getElementById('edit_fonction').value = user.fonction || '';
 
-            // Set Form Action (We need to add a route for update if it doesn't exist, 
-            // assuming standard resource route: /users/{id})
+            // Reset password fields
+            document.getElementById('edit_password').value = '';
+            document.getElementById('edit_password_confirmation').value = '';
+
+            // Set Form Action
             form.action = `/users/${user.id}`;
-            
-            // Laravel resource controller usually expects PUT/PATCH
-            // The @method('PUT') inside form handles this.
 
             modal.style.display = 'flex';
         }
@@ -217,6 +280,26 @@
         // Close on click outside
         document.getElementById('userModal').addEventListener('click', function(e) {
             if(e.target === this) closeUserModal();
+        });
+
+        function openPasswordModal(user) {
+            const modal = document.getElementById('passwordModal');
+            const form = document.getElementById('changePasswordForm');
+            
+            document.getElementById('password_user_name').textContent = `${user.name} (${user.email})`;
+            form.action = `/users/${user.id}/password`;
+            form.reset();
+
+            modal.style.display = 'flex';
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+        }
+
+        // Close on click outside
+        document.getElementById('passwordModal').addEventListener('click', function(e) {
+            if(e.target === this) closePasswordModal();
         });
     </script>
 @endsection

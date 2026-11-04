@@ -40,6 +40,8 @@ Route::middleware('auth')->group(function () {
     // Users (Admin Only - ideally protected by middleware)
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::put('/users/{user}/password', [UserController::class, 'updatePassword'])->name('users.password.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     // Services (Admin Only)
