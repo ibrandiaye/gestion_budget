@@ -89,14 +89,14 @@
             <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Se connecter</button>
         </form>
 
-        <div
+       <!--  <div
             style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); font-size: 0.85rem;">
             <p style="color: var(--text-muted); margin-bottom: 0.5rem;">Comptes de démonstration :</p>
             <div style="display: grid; gap: 0.5rem; color: var(--slate-600);">
                 <code>admin@ledantec.sn / password</code>
                 <code>fall@ledantec.sn / password</code> (Chirurgie)
             </div>
-        </div>
+        </div> -->
     </div>
 </body>
 
